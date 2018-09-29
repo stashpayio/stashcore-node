@@ -33,7 +33,7 @@ describe('#create', function() {
       if (err) {
         throw err;
       }
-      mkdirp(testDir + '/.dash', function(err) {
+      mkdirp(testDir + '/.stash', function(err) {
         if (err) {
           throw err;
         }
@@ -64,14 +64,14 @@ describe('#create', function() {
         throw err;
       }
 
-      var configPath = testDir + '/mynode/dashcore-node.json';
+      var configPath = testDir + '/mynode/stashcore-node.json';
       var packagePath = testDir + '/mynode/package.json';
 
       should.equal(fs.existsSync(configPath), true);
       should.equal(fs.existsSync(packagePath), true);
 
       var config = JSON.parse(fs.readFileSync(configPath));
-      config.services.should.deep.equal(['dashd', 'db', 'address', 'web']);
+      config.services.should.deep.equal(['stashd', 'db', 'address', 'web']);
       config.datadir.should.equal('./data');
       config.network.should.equal('livenet');
 
@@ -104,7 +104,7 @@ describe('#create', function() {
       dirname: 'mynode3',
       name: 'My Node 3',
       isGlobal: true,
-      datadir: '../.dash'
+      datadir: '../.stash'
     }, function(err) {
       if (err) {
         throw err;
@@ -139,7 +139,7 @@ describe('#create', function() {
       dirname: 'mynode4',
       name: 'My Node 4',
       isGlobal: false,
-      datadir: '../.dash'
+      datadir: '../.stash'
     }, function(err) {
       should.exist(err);
       err.message.should.equal('There was an error installing dependencies.');

@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+
+var stashcore = require('../lib/cli/stashcore');
+stashcore();

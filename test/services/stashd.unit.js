@@ -6,8 +6,8 @@ var path = require('path');
 var EventEmitter = require('events').EventEmitter;
 var should = require('chai').should();
 var crypto = require('crypto');
-var dashcore = require('@dashevo/dashcore-lib');
-var _ = dashcore.deps._;
+var stashcore = require('@stashcore/stashcore-lib');
+var _ = stashcore.deps._;
 var sinon = require('sinon');
 var proxyquire = require('proxyquire');
 var fs = require('fs');
@@ -17,21 +17,21 @@ var index = require('../../lib');
 var log = index.log;
 var errors = index.errors;
 
-var Transaction = dashcore.Transaction;
-var readFileSync = sinon.stub().returns(fs.readFileSync(path.resolve(__dirname, '../data/dash.conf')));
-var DashService = proxyquire('../../lib/services/dashd', {
+var Transaction = stashcore.Transaction;
+var readFileSync = sinon.stub().returns(fs.readFileSync(path.resolve(__dirname, '../data/stash.conf')));
+var StashService = proxyquire('../../lib/services/stashd', {
   fs: {
     readFileSync: readFileSync
   }
 });
-var defaultDashConf = fs.readFileSync(path.resolve(__dirname, '../data/default.dash.conf'), 'utf8');
+var defaultStashConf = fs.readFileSync(path.resolve(__dirname, '../data/default.stash.conf'), 'utf8');
 
-describe('Dash Service', function() {
+describe('Stash Service', function() {
   var txhex = '01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704ffff001d0104ffffffff0100f2052a0100000043410496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858eeac00000000';
 
   var baseConfig = {
     node: {
-      network: dashcore.Networks.testnet
+      network: stashcore.Networks.testnet
     },
     spawn: {
       datadir: 'testdir',
@@ -41,42 +41,42 @@ describe('Dash Service', function() {
 
   describe('@constructor', function() {
     it('will create an instance', function() {
-      var dashd = new DashService(baseConfig);
-      should.exist(dashd);
+      var stashd = new StashService(baseConfig);
+      should.exist(stashd);
     });
     it('will create an instance without `new`', function() {
-      var dashd = DashService(baseConfig);
-      should.exist(dashd);
+      var stashd = StashService(baseConfig);
+      should.exist(stashd);
     });
     it('will init caches', function() {
-      var dashd = new DashService(baseConfig);
-      should.exist(dashd.utxosCache);
-      should.exist(dashd.txidsCache);
-      should.exist(dashd.balanceCache);
-      should.exist(dashd.summaryCache);
-      should.exist(dashd.transactionDetailedCache);
-      should.exist(dashd.masternodeListCache);
+      var stashd = new StashService(baseConfig);
+      should.exist(stashd.utxosCache);
+      should.exist(stashd.txidsCache);
+      should.exist(stashd.balanceCache);
+      should.exist(stashd.summaryCache);
+      should.exist(stashd.transactionDetailedCache);
+      should.exist(stashd.masternodeListCache);
 
-      should.exist(dashd.transactionCache);
-      should.exist(dashd.rawTransactionCache);
-      should.exist(dashd.blockCache);
-      should.exist(dashd.rawBlockCache);
-      should.exist(dashd.blockHeaderCache);
-      should.exist(dashd.zmqKnownTransactions);
-      should.exist(dashd.zmqKnownBlocks);
-      should.exist(dashd.lastTip);
-      should.exist(dashd.lastTipTimeout);
+      should.exist(stashd.transactionCache);
+      should.exist(stashd.rawTransactionCache);
+      should.exist(stashd.blockCache);
+      should.exist(stashd.rawBlockCache);
+      should.exist(stashd.blockHeaderCache);
+      should.exist(stashd.zmqKnownTransactions);
+      should.exist(stashd.zmqKnownBlocks);
+      should.exist(stashd.lastTip);
+      should.exist(stashd.lastTipTimeout);
     });
     it('will init clients', function() {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.should.deep.equal([]);
-      dashd.nodesIndex.should.equal(0);
-      dashd.nodes.push({client: sinon.stub()});
-      should.exist(dashd.client);
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.should.deep.equal([]);
+      stashd.nodesIndex.should.equal(0);
+      stashd.nodes.push({client: sinon.stub()});
+      should.exist(stashd.client);
     });
     it('will set subscriptions', function() {
-      var dashd = new DashService(baseConfig);
-      dashd.subscriptions.should.deep.equal({
+      var stashd = new StashService(baseConfig);
+      stashd.subscriptions.should.deep.equal({
         address: {},
         rawtransaction: [],
         hashblock: [],
@@ -87,24 +87,24 @@ describe('Dash Service', function() {
 
   describe('#_initDefaults', function() {
     it('will set transaction concurrency', function() {
-      var dashd = new DashService(baseConfig);
-      dashd._initDefaults({transactionConcurrency: 10});
-      dashd.transactionConcurrency.should.equal(10);
-      dashd._initDefaults({});
-      dashd.transactionConcurrency.should.equal(5);
+      var stashd = new StashService(baseConfig);
+      stashd._initDefaults({transactionConcurrency: 10});
+      stashd.transactionConcurrency.should.equal(10);
+      stashd._initDefaults({});
+      stashd.transactionConcurrency.should.equal(5);
     });
   });
 
   describe('@dependencies', function() {
     it('will have no dependencies', function() {
-      DashService.dependencies.should.deep.equal([]);
+      StashService.dependencies.should.deep.equal([]);
     });
   });
 
   describe('#getAPIMethods', function() {
     it('will return spec', function() {
-      var dashd = new DashService(baseConfig);
-      var methods = dashd.getAPIMethods();
+      var stashd = new StashService(baseConfig);
+      var methods = stashd.getAPIMethods();
       should.exist(methods);
       methods.length.should.equal(23);
     });
@@ -112,56 +112,56 @@ describe('Dash Service', function() {
 
   describe('#getPublishEvents', function() {
     it('will return spec', function() {
-      var dashd = new DashService(baseConfig);
-      var events = dashd.getPublishEvents();
+      var stashd = new StashService(baseConfig);
+      var events = stashd.getPublishEvents();
       should.exist(events);
       events.length.should.equal(4);
-      events[0].name.should.equal('dashd/rawtransaction');
-      events[0].scope.should.equal(dashd);
+      events[0].name.should.equal('stashd/rawtransaction');
+      events[0].scope.should.equal(stashd);
       events[0].subscribe.should.be.a('function');
       events[0].unsubscribe.should.be.a('function');
-      events[1].name.should.equal('dashd/transactionlock');
-      events[1].scope.should.equal(dashd);
+      events[1].name.should.equal('stashd/transactionlock');
+      events[1].scope.should.equal(stashd);
       events[1].subscribe.should.be.a('function');
       events[1].unsubscribe.should.be.a('function');
-      events[2].name.should.equal('dashd/hashblock');
-      events[2].scope.should.equal(dashd);
+      events[2].name.should.equal('stashd/hashblock');
+      events[2].scope.should.equal(stashd);
       events[2].subscribe.should.be.a('function');
       events[2].unsubscribe.should.be.a('function');
-      events[3].name.should.equal('dashd/addresstxid');
-      events[3].scope.should.equal(dashd);
+      events[3].name.should.equal('stashd/addresstxid');
+      events[3].scope.should.equal(stashd);
       events[3].subscribe.should.be.a('function');
       events[3].unsubscribe.should.be.a('function');
     });
     it('will call subscribe/unsubscribe with correct args', function() {
-      var dashd = new DashService(baseConfig);
-      dashd.subscribe = sinon.stub();
-      dashd.unsubscribe = sinon.stub();
-      var events = dashd.getPublishEvents();
+      var stashd = new StashService(baseConfig);
+      stashd.subscribe = sinon.stub();
+      stashd.unsubscribe = sinon.stub();
+      var events = stashd.getPublishEvents();
 
       events[0].subscribe('test');
-      dashd.subscribe.args[0][0].should.equal('rawtransaction');
-      dashd.subscribe.args[0][1].should.equal('test');
+      stashd.subscribe.args[0][0].should.equal('rawtransaction');
+      stashd.subscribe.args[0][1].should.equal('test');
 
       events[0].unsubscribe('test');
-      dashd.unsubscribe.args[0][0].should.equal('rawtransaction');
-      dashd.unsubscribe.args[0][1].should.equal('test');
+      stashd.unsubscribe.args[0][0].should.equal('rawtransaction');
+      stashd.unsubscribe.args[0][1].should.equal('test');
 
       events[1].subscribe('test');
-      dashd.subscribe.args[1][0].should.equal('transactionlock');
-      dashd.subscribe.args[1][1].should.equal('test');
+      stashd.subscribe.args[1][0].should.equal('transactionlock');
+      stashd.subscribe.args[1][1].should.equal('test');
 
       events[1].unsubscribe('test');
-      dashd.unsubscribe.args[1][0].should.equal('transactionlock');
-      dashd.unsubscribe.args[1][1].should.equal('test');
+      stashd.unsubscribe.args[1][0].should.equal('transactionlock');
+      stashd.unsubscribe.args[1][1].should.equal('test');
 
       events[2].subscribe('test');
-      dashd.subscribe.args[2][0].should.equal('hashblock');
-      dashd.subscribe.args[2][1].should.equal('test');
+      stashd.subscribe.args[2][0].should.equal('hashblock');
+      stashd.subscribe.args[2][1].should.equal('test');
 
       events[2].unsubscribe('test');
-      dashd.unsubscribe.args[2][0].should.equal('hashblock');
-      dashd.unsubscribe.args[2][1].should.equal('test');
+      stashd.unsubscribe.args[2][0].should.equal('hashblock');
+      stashd.unsubscribe.args[2][1].should.equal('test');
     });
   });
 
@@ -174,14 +174,14 @@ describe('Dash Service', function() {
       sandbox.restore();
     });
     it('will push to subscriptions', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var emitter = {};
-      dashd.subscribe('hashblock', emitter);
-      dashd.subscriptions.hashblock[0].should.equal(emitter);
+      stashd.subscribe('hashblock', emitter);
+      stashd.subscriptions.hashblock[0].should.equal(emitter);
 
       var emitter2 = {};
-      dashd.subscribe('rawtransaction', emitter2);
-      dashd.subscriptions.rawtransaction[0].should.equal(emitter2);
+      stashd.subscribe('rawtransaction', emitter2);
+      stashd.subscriptions.rawtransaction[0].should.equal(emitter2);
     });
   });
 
@@ -194,34 +194,34 @@ describe('Dash Service', function() {
       sandbox.restore();
     });
     it('will remove item from subscriptions', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var emitter1 = {};
       var emitter2 = {};
       var emitter3 = {};
       var emitter4 = {};
       var emitter5 = {};
-      dashd.subscribe('hashblock', emitter1);
-      dashd.subscribe('hashblock', emitter2);
-      dashd.subscribe('hashblock', emitter3);
-      dashd.subscribe('hashblock', emitter4);
-      dashd.subscribe('hashblock', emitter5);
-      dashd.subscriptions.hashblock.length.should.equal(5);
+      stashd.subscribe('hashblock', emitter1);
+      stashd.subscribe('hashblock', emitter2);
+      stashd.subscribe('hashblock', emitter3);
+      stashd.subscribe('hashblock', emitter4);
+      stashd.subscribe('hashblock', emitter5);
+      stashd.subscriptions.hashblock.length.should.equal(5);
 
-      dashd.unsubscribe('hashblock', emitter3);
-      dashd.subscriptions.hashblock.length.should.equal(4);
-      dashd.subscriptions.hashblock[0].should.equal(emitter1);
-      dashd.subscriptions.hashblock[1].should.equal(emitter2);
-      dashd.subscriptions.hashblock[2].should.equal(emitter4);
-      dashd.subscriptions.hashblock[3].should.equal(emitter5);
+      stashd.unsubscribe('hashblock', emitter3);
+      stashd.subscriptions.hashblock.length.should.equal(4);
+      stashd.subscriptions.hashblock[0].should.equal(emitter1);
+      stashd.subscriptions.hashblock[1].should.equal(emitter2);
+      stashd.subscriptions.hashblock[2].should.equal(emitter4);
+      stashd.subscriptions.hashblock[3].should.equal(emitter5);
     });
     it('will not remove item an already unsubscribed item', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var emitter1 = {};
       var emitter3 = {};
-      dashd.subscriptions.hashblock= [emitter1];
-      dashd.unsubscribe('hashblock', emitter3);
-      dashd.subscriptions.hashblock.length.should.equal(1);
-      dashd.subscriptions.hashblock[0].should.equal(emitter1);
+      stashd.subscriptions.hashblock= [emitter1];
+      stashd.unsubscribe('hashblock', emitter3);
+      stashd.subscriptions.hashblock.length.should.equal(1);
+      stashd.subscriptions.hashblock[0].should.equal(emitter1);
     });
   });
 
@@ -234,33 +234,33 @@ describe('Dash Service', function() {
       sandbox.restore();
     });
     it('will not an invalid address', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var emitter = new EventEmitter();
-      dashd.subscribeAddress(emitter, ['invalidaddress']);
-      should.not.exist(dashd.subscriptions.address['invalidaddress']);
+      stashd.subscribeAddress(emitter, ['invalidaddress']);
+      should.not.exist(stashd.subscriptions.address['invalidaddress']);
     });
     it('will add a valid address', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var emitter = new EventEmitter();
-      dashd.subscribeAddress(emitter, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
-      should.exist(dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      stashd.subscribeAddress(emitter, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      should.exist(stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
     });
     it('will handle multiple address subscribers', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      dashd.subscribeAddress(emitter1, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
-      dashd.subscribeAddress(emitter2, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
-      should.exist(dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(2);
+      stashd.subscribeAddress(emitter1, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      stashd.subscribeAddress(emitter2, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      should.exist(stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(2);
     });
     it('will not add the same emitter twice', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var emitter1 = new EventEmitter();
-      dashd.subscribeAddress(emitter1, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
-      dashd.subscribeAddress(emitter1, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
-      should.exist(dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(1);
+      stashd.subscribeAddress(emitter1, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      stashd.subscribeAddress(emitter1, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      should.exist(stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(1);
     });
   });
 
@@ -273,61 +273,61 @@ describe('Dash Service', function() {
       sandbox.restore();
     });
     it('it will remove a subscription', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      dashd.subscribeAddress(emitter1, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
-      dashd.subscribeAddress(emitter2, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
-      should.exist(dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(2);
-      dashd.unsubscribeAddress(emitter1, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(1);
+      stashd.subscribeAddress(emitter1, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      stashd.subscribeAddress(emitter2, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      should.exist(stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(2);
+      stashd.unsubscribeAddress(emitter1, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(1);
     });
     it('will unsubscribe subscriptions for an emitter', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'] = [emitter1, emitter2];
-      dashd.unsubscribeAddress(emitter1);
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(1);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'] = [emitter1, emitter2];
+      stashd.unsubscribeAddress(emitter1);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(1);
     });
     it('will NOT unsubscribe subscription with missing address', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'] = [emitter1, emitter2];
-      dashd.unsubscribeAddress(emitter1, ['XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs']);
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(2);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'] = [emitter1, emitter2];
+      stashd.unsubscribeAddress(emitter1, ['XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs']);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(2);
     });
     it('will NOT unsubscribe subscription with missing emitter', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'] = [emitter2];
-      dashd.unsubscribeAddress(emitter1, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(1);
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'][0].should.equal(emitter2);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'] = [emitter2];
+      stashd.unsubscribeAddress(emitter1, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(1);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'][0].should.equal(emitter2);
     });
     it('will remove empty addresses', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'] = [emitter1, emitter2];
-      dashd.unsubscribeAddress(emitter1, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
-      dashd.unsubscribeAddress(emitter2, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
-      should.not.exist(dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'] = [emitter1, emitter2];
+      stashd.unsubscribeAddress(emitter1, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      stashd.unsubscribeAddress(emitter2, ['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
+      should.not.exist(stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi']);
     });
     it('will unsubscribe emitter for all addresses', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'] = [emitter1, emitter2];
-      dashd.subscriptions.address['XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs'] = [emitter1, emitter2];
-      sinon.spy(dashd, 'unsubscribeAddressAll');
-      dashd.unsubscribeAddress(emitter1);
-      dashd.unsubscribeAddressAll.callCount.should.equal(1);
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(1);
-      dashd.subscriptions.address['XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs'].length.should.equal(1);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'] = [emitter1, emitter2];
+      stashd.subscriptions.address['XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs'] = [emitter1, emitter2];
+      sinon.spy(stashd, 'unsubscribeAddressAll');
+      stashd.unsubscribeAddress(emitter1);
+      stashd.unsubscribeAddressAll.callCount.should.equal(1);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(1);
+      stashd.subscriptions.address['XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs'].length.should.equal(1);
     });
   });
 
@@ -340,26 +340,26 @@ describe('Dash Service', function() {
       sandbox.restore();
     });
     it('will unsubscribe emitter for all addresses', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'] = [emitter1, emitter2];
-      dashd.subscriptions.address['XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs'] = [emitter1, emitter2];
-      dashd.subscriptions.address['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW'] = [emitter2];
-      dashd.subscriptions.address['7d5169eBcGHF4BYC6DTffTyeCpWbrZnNgz'] = [emitter1];
-      dashd.unsubscribeAddress(emitter1);
-      dashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(1);
-      dashd.subscriptions.address['XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs'].length.should.equal(1);
-      dashd.subscriptions.address['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW'].length.should.equal(1);
-      should.not.exist(dashd.subscriptions.address['7d5169eBcGHF4BYC6DTffTyeCpWbrZnNgz']);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'] = [emitter1, emitter2];
+      stashd.subscriptions.address['XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs'] = [emitter1, emitter2];
+      stashd.subscriptions.address['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW'] = [emitter2];
+      stashd.subscriptions.address['7d5169eBcGHF4BYC6DTffTyeCpWbrZnNgz'] = [emitter1];
+      stashd.unsubscribeAddress(emitter1);
+      stashd.subscriptions.address['8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi'].length.should.equal(1);
+      stashd.subscriptions.address['XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs'].length.should.equal(1);
+      stashd.subscriptions.address['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW'].length.should.equal(1);
+      should.not.exist(stashd.subscriptions.address['7d5169eBcGHF4BYC6DTffTyeCpWbrZnNgz']);
     });
   });
 
   describe('#_getDefaultConfig', function() {
     it('will generate config file from defaults', function() {
-      var dashd = new DashService(baseConfig);
-      var config = dashd._getDefaultConfig();
-      config.should.equal(defaultDashConf);
+      var stashd = new StashService(baseConfig);
+      var config = stashd._getDefaultConfig();
+      config.should.equal(defaultStashConf);
     });
   });
 
@@ -371,8 +371,8 @@ describe('Dash Service', function() {
     afterEach(function() {
       sandbox.restore();
     });
-    it('will parse a dash.conf file', function() {
-      var TestDash = proxyquire('../../lib/services/dashd', {
+    it('will parse a stash.conf file', function() {
+      var TestStash = proxyquire('../../lib/services/stashd', {
         fs: {
           readFileSync: readFileSync,
           existsSync: sinon.stub().returns(true),
@@ -382,12 +382,12 @@ describe('Dash Service', function() {
           sync: sinon.stub()
         }
       });
-      var dashd = new TestDash(baseConfig);
-      dashd.options.spawn.datadir = '/tmp/.dash';
+      var stashd = new TestStash(baseConfig);
+      stashd.options.spawn.datadir = '/tmp/.stash';
       var node = {};
-      dashd._loadSpawnConfiguration(node);
-      should.exist(dashd.spawn.config);
-      dashd.spawn.config.should.deep.equal({
+      stashd._loadSpawnConfiguration(node);
+      should.exist(stashd.spawn.config);
+      stashd.spawn.config.should.deep.equal({
         addressindex: 1,
         checkblocks: 144,
         dbcache: 8192,
@@ -395,7 +395,7 @@ describe('Dash Service', function() {
         port: 20000,
         rpcport: 50001,
         rpcallowip: '127.0.0.1',
-        rpcuser: 'dash',
+        rpcuser: 'stash',
         rpcpassword: 'local321',
         server: 1,
         spentindex: 1,
@@ -409,7 +409,7 @@ describe('Dash Service', function() {
       });
     });
     it('will expand relative datadir to absolute path', function() {
-      var TestDash = proxyquire('../../lib/services/dashd', {
+      var TestStash = proxyquire('../../lib/services/stashd', {
         fs: {
           readFileSync: readFileSync,
           existsSync: sinon.stub().returns(true),
@@ -421,40 +421,40 @@ describe('Dash Service', function() {
       });
       var config = {
         node: {
-          network: dashcore.Networks.testnet,
-          configPath: '/tmp/.dashcore/dashcore-node.json'
+          network: stashcore.Networks.testnet,
+          configPath: '/tmp/.stashcore/stashcore-node.json'
         },
         spawn: {
           datadir: './data',
           exec: 'testpath'
         }
       };
-      var dashd = new TestDash(config);
-      dashd.options.spawn.datadir = './data';
+      var stashd = new TestStash(config);
+      stashd.options.spawn.datadir = './data';
       var node = {};
-      dashd._loadSpawnConfiguration(node);
-      dashd.options.spawn.datadir.should.equal('/tmp/.dashcore/data');
+      stashd._loadSpawnConfiguration(node);
+      stashd.options.spawn.datadir.should.equal('/tmp/.stashcore/data');
     });
     it('should throw an exception if txindex isn\'t enabled in the configuration', function() {
-      var TestDash = proxyquire('../../lib/services/dashd', {
+      var TestStash = proxyquire('../../lib/services/stashd', {
         fs: {
-          readFileSync: sinon.stub().returns(fs.readFileSync(__dirname + '/../data/baddash.conf')),
+          readFileSync: sinon.stub().returns(fs.readFileSync(__dirname + '/../data/badstash.conf')),
           existsSync: sinon.stub().returns(true),
         },
         mkdirp: {
           sync: sinon.stub()
         }
       });
-      var dashd = new TestDash(baseConfig);
+      var stashd = new TestStash(baseConfig);
       (function() {
-        dashd._loadSpawnConfiguration({datadir: './test'});
-      }).should.throw(dashcore.errors.InvalidState);
+        stashd._loadSpawnConfiguration({datadir: './test'});
+      }).should.throw(stashcore.errors.InvalidState);
     });
     it('should NOT set https options if node https options are set', function() {
       var writeFileSync = function(path, config) {
-        config.should.equal(defaultDashConf);
+        config.should.equal(defaultStashConf);
       };
-      var TestDash = proxyquire('../../lib/services/dashd', {
+      var TestStash = proxyquire('../../lib/services/stashd', {
         fs: {
           writeFileSync: writeFileSync,
           readFileSync: readFileSync,
@@ -480,10 +480,10 @@ describe('Dash Service', function() {
           exec: 'testexec'
         }
       };
-      var dashd = new TestDash(config);
-      dashd.options.spawn.datadir = '/tmp/.dash';
+      var stashd = new TestStash(config);
+      stashd.options.spawn.datadir = '/tmp/.stash';
       var node = {};
-      dashd._loadSpawnConfiguration(node);
+      stashd._loadSpawnConfiguration(node);
     });
   });
 
@@ -495,8 +495,8 @@ describe('Dash Service', function() {
     afterEach(function() {
       sandbox.restore();
     });
-    it('should warn the user if reindex is set to 1 in the dash.conf file', function() {
-      var dashd = new DashService(baseConfig);
+    it('should warn the user if reindex is set to 1 in the stash.conf file', function() {
+      var stashd = new StashService(baseConfig);
       var config = {
         txindex: 1,
         addressindex: 1,
@@ -508,12 +508,12 @@ describe('Dash Service', function() {
         reindex: 1
       };
       var node = {};
-      dashd._checkConfigIndexes(config, node);
+      stashd._checkConfigIndexes(config, node);
       log.warn.callCount.should.equal(1);
       node._reindex.should.equal(true);
     });
     it('should warn if zmq port and hosts do not match', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var config = {
         txindex: 1,
         addressindex: 1,
@@ -526,113 +526,113 @@ describe('Dash Service', function() {
       };
       var node = {};
       (function() {
-        dashd._checkConfigIndexes(config, node);
+        stashd._checkConfigIndexes(config, node);
       }).should.throw('"zmqpubrawtx" and "zmqpubhashblock"');
     });
   });
 
   describe('#_resetCaches', function() {
     it('will reset LRU caches', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var keys = [];
       for (var i = 0; i < 10; i++) {
         keys.push(crypto.randomBytes(32));
-        dashd.transactionDetailedCache.set(keys[i], {});
-        dashd.utxosCache.set(keys[i], {});
-        dashd.txidsCache.set(keys[i], {});
-        dashd.balanceCache.set(keys[i], {});
-        dashd.summaryCache.set(keys[i], {});
+        stashd.transactionDetailedCache.set(keys[i], {});
+        stashd.utxosCache.set(keys[i], {});
+        stashd.txidsCache.set(keys[i], {});
+        stashd.balanceCache.set(keys[i], {});
+        stashd.summaryCache.set(keys[i], {});
       }
-      dashd._resetCaches();
-      should.equal(dashd.transactionDetailedCache.get(keys[0]), undefined);
-      should.equal(dashd.utxosCache.get(keys[0]), undefined);
-      should.equal(dashd.txidsCache.get(keys[0]), undefined);
-      should.equal(dashd.balanceCache.get(keys[0]), undefined);
-      should.equal(dashd.summaryCache.get(keys[0]), undefined);
+      stashd._resetCaches();
+      should.equal(stashd.transactionDetailedCache.get(keys[0]), undefined);
+      should.equal(stashd.utxosCache.get(keys[0]), undefined);
+      should.equal(stashd.txidsCache.get(keys[0]), undefined);
+      should.equal(stashd.balanceCache.get(keys[0]), undefined);
+      should.equal(stashd.summaryCache.get(keys[0]), undefined);
     });
   });
 
   describe('#_tryAllClients', function() {
     it('will retry for each node client', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.tryAllInterval = 1;
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.tryAllInterval = 1;
+      stashd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('test'))
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('test'))
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArg(0)
         }
       });
-      dashd._tryAllClients(function(client, next) {
+      stashd._tryAllClients(function(client, next) {
         client.getInfo(next);
       }, function(err) {
         if (err) {
           return done(err);
         }
-        dashd.nodes[0].client.getInfo.callCount.should.equal(1);
-        dashd.nodes[1].client.getInfo.callCount.should.equal(1);
-        dashd.nodes[2].client.getInfo.callCount.should.equal(1);
+        stashd.nodes[0].client.getInfo.callCount.should.equal(1);
+        stashd.nodes[1].client.getInfo.callCount.should.equal(1);
+        stashd.nodes[2].client.getInfo.callCount.should.equal(1);
         done();
       });
     });
     it('will start using the current node index (round-robin)', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.tryAllInterval = 1;
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.tryAllInterval = 1;
+      stashd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('2'))
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('3'))
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('1'))
         }
       });
-      dashd.nodesIndex = 2;
-      dashd._tryAllClients(function(client, next) {
+      stashd.nodesIndex = 2;
+      stashd._tryAllClients(function(client, next) {
         client.getInfo(next);
       }, function(err) {
         err.should.be.instanceOf(Error);
         err.message.should.equal('3');
-        dashd.nodes[0].client.getInfo.callCount.should.equal(1);
-        dashd.nodes[1].client.getInfo.callCount.should.equal(1);
-        dashd.nodes[2].client.getInfo.callCount.should.equal(1);
-        dashd.nodesIndex.should.equal(0);
+        stashd.nodes[0].client.getInfo.callCount.should.equal(1);
+        stashd.nodes[1].client.getInfo.callCount.should.equal(1);
+        stashd.nodes[2].client.getInfo.callCount.should.equal(1);
+        stashd.nodesIndex.should.equal(0);
         done();
       });
     });
     it('will get error if all clients fail', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.tryAllInterval = 1;
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.tryAllInterval = 1;
+      stashd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('test'))
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('test'))
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('test'))
         }
       });
-      dashd._tryAllClients(function(client, next) {
+      stashd._tryAllClients(function(client, next) {
         client.getInfo(next);
       }, function(err) {
         should.exist(err);
@@ -644,9 +644,9 @@ describe('Dash Service', function() {
   });
 
   describe('#_wrapRPCError', function() {
-    it('will convert dashd-rpc object into JavaScript error', function() {
-      var dashd = new DashService(baseConfig);
-      var error = dashd._wrapRPCError({message: 'Test error', code: -1});
+    it('will convert stashd-rpc object into JavaScript error', function() {
+      var stashd = new StashService(baseConfig);
+      var error = stashd._wrapRPCError({message: 'Test error', code: -1});
       error.should.be.an.instanceof(errors.RPCError);
       error.code.should.equal(-1);
       error.message.should.equal('Test error');
@@ -662,10 +662,10 @@ describe('Dash Service', function() {
       sandbox.restore();
     });
     it('will set height and genesis buffer', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var genesisBuffer = new Buffer([]);
-      dashd.getRawBlock = sinon.stub().callsArgWith(1, null, genesisBuffer);
-      dashd.nodes.push({
+      stashd.getRawBlock = sinon.stub().callsArgWith(1, null, genesisBuffer);
+      stashd.nodes.push({
         client: {
           getBestBlockHash: function(callback) {
             callback(null, {
@@ -688,45 +688,45 @@ describe('Dash Service', function() {
           }
         }
       });
-      dashd._initChain(function() {
+      stashd._initChain(function() {
         log.info.callCount.should.equal(1);
-        dashd.getRawBlock.callCount.should.equal(1);
-        dashd.getRawBlock.args[0][0].should.equal('genesishash');
-        dashd.height.should.equal(5000);
-        dashd.genesisBuffer.should.equal(genesisBuffer);
+        stashd.getRawBlock.callCount.should.equal(1);
+        stashd.getRawBlock.args[0][0].should.equal('genesishash');
+        stashd.height.should.equal(5000);
+        stashd.genesisBuffer.should.equal(genesisBuffer);
         done();
       });
     });
     it('it will handle error from getBestBlockHash', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, {code: -1, message: 'error'});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBestBlockHash: getBestBlockHash
         }
       });
-      dashd._initChain(function(err) {
+      stashd._initChain(function(err) {
         err.should.be.instanceOf(Error);
         done();
       });
     });
     it('it will handle error from getBlock', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {});
       var getBlock = sinon.stub().callsArgWith(1, {code: -1, message: 'error'});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBestBlockHash: getBestBlockHash,
           getBlock: getBlock
         }
       });
-      dashd._initChain(function(err) {
+      stashd._initChain(function(err) {
         err.should.be.instanceOf(Error);
         done();
       });
     });
     it('it will handle error from getBlockHash', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {});
       var getBlock = sinon.stub().callsArgWith(1, null, {
         result: {
@@ -734,20 +734,20 @@ describe('Dash Service', function() {
         }
       });
       var getBlockHash = sinon.stub().callsArgWith(1, {code: -1, message: 'error'});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBestBlockHash: getBestBlockHash,
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
-      dashd._initChain(function(err) {
+      stashd._initChain(function(err) {
         err.should.be.instanceOf(Error);
         done();
       });
     });
     it('it will handle error from getRawBlock', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {});
       var getBlock = sinon.stub().callsArgWith(1, null, {
         result: {
@@ -755,15 +755,15 @@ describe('Dash Service', function() {
         }
       });
       var getBlockHash = sinon.stub().callsArgWith(1, null, {});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBestBlockHash: getBestBlockHash,
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
-      dashd.getRawBlock = sinon.stub().callsArgWith(1, new Error('test'));
-      dashd._initChain(function(err) {
+      stashd.getRawBlock = sinon.stub().callsArgWith(1, new Error('test'));
+      stashd._initChain(function(err) {
         err.should.be.instanceOf(Error);
         done();
       });
@@ -772,176 +772,176 @@ describe('Dash Service', function() {
 
   describe('#_getDefaultConf', function() {
     afterEach(function() {
-      dashcore.Networks.disableRegtest();
-      baseConfig.node.network = dashcore.Networks.testnet;
+      stashcore.Networks.disableRegtest();
+      baseConfig.node.network = stashcore.Networks.testnet;
     });
     it('will get default rpc port for livenet', function() {
       var config = {
         node: {
-          network: dashcore.Networks.livenet
+          network: stashcore.Networks.livenet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var dashd = new DashService(config);
-      dashd._getDefaultConf().rpcport.should.equal(9998);
+      var stashd = new StashService(config);
+      stashd._getDefaultConf().rpcport.should.equal(9998);
     });
     it('will get default rpc port for testnet', function() {
       var config = {
         node: {
-          network: dashcore.Networks.testnet
+          network: stashcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var dashd = new DashService(config);
-      dashd._getDefaultConf().rpcport.should.equal(19998);
+      var stashd = new StashService(config);
+      stashd._getDefaultConf().rpcport.should.equal(19998);
     });
     it('will get default rpc port for regtest', function() {
-      dashcore.Networks.enableRegtest();
+      stashcore.Networks.enableRegtest();
       var config = {
         node: {
-          network: dashcore.Networks.testnet
+          network: stashcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var dashd = new DashService(config);
-      dashd._getDefaultConf().rpcport.should.equal(19998);
+      var stashd = new StashService(config);
+      stashd._getDefaultConf().rpcport.should.equal(19998);
     });
   });
 
   describe('#_getNetworkConfigPath', function() {
     afterEach(function() {
-      dashcore.Networks.disableRegtest();
-      baseConfig.node.network = dashcore.Networks.testnet;
+      stashcore.Networks.disableRegtest();
+      baseConfig.node.network = stashcore.Networks.testnet;
     });
     it('will get default config path for livenet', function() {
       var config = {
         node: {
-          network: dashcore.Networks.livenet
+          network: stashcore.Networks.livenet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var dashd = new DashService(config);
-      should.equal(dashd._getNetworkConfigPath(), undefined);
+      var stashd = new StashService(config);
+      should.equal(stashd._getNetworkConfigPath(), undefined);
     });
     it('will get default rpc port for testnet', function() {
       var config = {
         node: {
-          network: dashcore.Networks.testnet
+          network: stashcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var dashd = new DashService(config);
-      dashd._getNetworkConfigPath().should.equal('testnet3/dash.conf');
+      var stashd = new StashService(config);
+      stashd._getNetworkConfigPath().should.equal('testnet3/stash.conf');
     });
     it('will get default rpc port for regtest', function() {
-      dashcore.Networks.enableRegtest();
+      stashcore.Networks.enableRegtest();
       var config = {
         node: {
-          network: dashcore.Networks.testnet
+          network: stashcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var dashd = new DashService(config);
-      dashd._getNetworkConfigPath().should.equal('regtest/dash.conf');
+      var stashd = new StashService(config);
+      stashd._getNetworkConfigPath().should.equal('regtest/stash.conf');
     });
   });
 
   describe('#_getNetworkOption', function() {
     afterEach(function() {
-      dashcore.Networks.disableRegtest();
-      baseConfig.node.network = dashcore.Networks.testnet;
+      stashcore.Networks.disableRegtest();
+      baseConfig.node.network = stashcore.Networks.testnet;
     });
     it('return --testnet for testnet', function() {
-      var dashd = new DashService(baseConfig);
-      dashd.node.network = dashcore.Networks.testnet;
-      dashd._getNetworkOption().should.equal('--testnet');
+      var stashd = new StashService(baseConfig);
+      stashd.node.network = stashcore.Networks.testnet;
+      stashd._getNetworkOption().should.equal('--testnet');
     });
     it('return --regtest for testnet', function() {
-      var dashd = new DashService(baseConfig);
-      dashd.node.network = dashcore.Networks.testnet;
-      dashcore.Networks.enableRegtest();
-      dashd._getNetworkOption().should.equal('--regtest');
+      var stashd = new StashService(baseConfig);
+      stashd.node.network = stashcore.Networks.testnet;
+      stashcore.Networks.enableRegtest();
+      stashd._getNetworkOption().should.equal('--regtest');
     });
     it('return undefined for livenet', function() {
-      var dashd = new DashService(baseConfig);
-      dashd.node.network = dashcore.Networks.livenet;
-      dashcore.Networks.enableRegtest();
-      should.equal(dashd._getNetworkOption(), undefined);
+      var stashd = new StashService(baseConfig);
+      stashd.node.network = stashcore.Networks.livenet;
+      stashcore.Networks.enableRegtest();
+      should.equal(stashd._getNetworkOption(), undefined);
     });
   });
 
   describe('#_zmqBlockHandler', function() {
     it('will emit block', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var node = {};
       var message = new Buffer('00000000002e08fc7ae9a9aa5380e95e2adcdc5752a4a66a7d3a22466bd4e6aa', 'hex');
-      dashd._rapidProtectedUpdateTip = sinon.stub();
-      dashd.on('block', function(block) {
+      stashd._rapidProtectedUpdateTip = sinon.stub();
+      stashd.on('block', function(block) {
         block.should.equal(message);
         done();
       });
-      dashd._zmqBlockHandler(node, message);
+      stashd._zmqBlockHandler(node, message);
     });
     it('will not emit same block twice', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var node = {};
       var message = new Buffer('00000000002e08fc7ae9a9aa5380e95e2adcdc5752a4a66a7d3a22466bd4e6aa', 'hex');
-      dashd._rapidProtectedUpdateTip = sinon.stub();
-      dashd.on('block', function(block) {
+      stashd._rapidProtectedUpdateTip = sinon.stub();
+      stashd.on('block', function(block) {
         block.should.equal(message);
         done();
       });
-      dashd._zmqBlockHandler(node, message);
-      dashd._zmqBlockHandler(node, message);
+      stashd._zmqBlockHandler(node, message);
+      stashd._zmqBlockHandler(node, message);
     });
     it('will call function to update tip', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var node = {};
       var message = new Buffer('00000000002e08fc7ae9a9aa5380e95e2adcdc5752a4a66a7d3a22466bd4e6aa', 'hex');
-      dashd._rapidProtectedUpdateTip = sinon.stub();
-      dashd._zmqBlockHandler(node, message);
-      dashd._rapidProtectedUpdateTip.callCount.should.equal(1);
-      dashd._rapidProtectedUpdateTip.args[0][0].should.equal(node);
-      dashd._rapidProtectedUpdateTip.args[0][1].should.equal(message);
+      stashd._rapidProtectedUpdateTip = sinon.stub();
+      stashd._zmqBlockHandler(node, message);
+      stashd._rapidProtectedUpdateTip.callCount.should.equal(1);
+      stashd._rapidProtectedUpdateTip.args[0][0].should.equal(node);
+      stashd._rapidProtectedUpdateTip.args[0][1].should.equal(message);
     });
     it('will emit to subscribers', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var node = {};
       var message = new Buffer('00000000002e08fc7ae9a9aa5380e95e2adcdc5752a4a66a7d3a22466bd4e6aa', 'hex');
-      dashd._rapidProtectedUpdateTip = sinon.stub();
+      stashd._rapidProtectedUpdateTip = sinon.stub();
       var emitter = new EventEmitter();
-      dashd.subscriptions.hashblock.push(emitter);
-      emitter.on('dashd/hashblock', function(blockHash) {
+      stashd.subscriptions.hashblock.push(emitter);
+      emitter.on('stashd/hashblock', function(blockHash) {
         blockHash.should.equal(message.toString('hex'));
         done();
       });
-      dashd._zmqBlockHandler(node, message);
+      stashd._zmqBlockHandler(node, message);
     });
   });
 
   describe('#_rapidProtectedUpdateTip', function() {
     it('will limit tip updates with rapid calls', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var callCount = 0;
-      dashd._updateTip = function() {
+      stashd._updateTip = function() {
         callCount++;
         callCount.should.be.within(1, 2);
         if (callCount > 1) {
@@ -952,7 +952,7 @@ describe('Dash Service', function() {
       var message = new Buffer('00000000002e08fc7ae9a9aa5380e95e2adcdc5752a4a66a7d3a22466bd4e6aa', 'hex');
       var count = 0;
       function repeat() {
-        dashd._rapidProtectedUpdateTip(node, message);
+        stashd._rapidProtectedUpdateTip(node, message);
         count++;
         if (count < 50) {
           repeat();
@@ -973,9 +973,9 @@ describe('Dash Service', function() {
       sandbox.restore();
     });
     it('log and emit rpc error from get block', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.syncPercentage = sinon.stub();
-      dashd.on('error', function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd.syncPercentage = sinon.stub();
+      stashd.on('error', function(err) {
         err.code.should.equal(-1);
         err.message.should.equal('Test error');
         log.error.callCount.should.equal(1);
@@ -986,12 +986,12 @@ describe('Dash Service', function() {
           getBlock: sinon.stub().callsArgWith(1, {message: 'Test error', code: -1})
         }
       };
-      dashd._updateTip(node, message);
+      stashd._updateTip(node, message);
     });
     it('emit synced if percentage is 100', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.syncPercentage = sinon.stub().callsArgWith(0, null, 100);
-      dashd.on('synced', function() {
+      var stashd = new StashService(baseConfig);
+      stashd.syncPercentage = sinon.stub().callsArgWith(0, null, 100);
+      stashd.on('synced', function() {
         done();
       });
       var node = {
@@ -999,12 +999,12 @@ describe('Dash Service', function() {
           getBlock: sinon.stub()
         }
       };
-      dashd._updateTip(node, message);
+      stashd._updateTip(node, message);
     });
     it('NOT emit synced if percentage is less than 100', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.syncPercentage = sinon.stub().callsArgWith(0, null, 99);
-      dashd.on('synced', function() {
+      var stashd = new StashService(baseConfig);
+      stashd.syncPercentage = sinon.stub().callsArgWith(0, null, 99);
+      stashd.on('synced', function() {
         throw new Error('Synced called');
       });
       var node = {
@@ -1012,14 +1012,14 @@ describe('Dash Service', function() {
           getBlock: sinon.stub()
         }
       };
-      dashd._updateTip(node, message);
+      stashd._updateTip(node, message);
       log.info.callCount.should.equal(1);
       done();
     });
     it('log and emit error from syncPercentage', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.syncPercentage = sinon.stub().callsArgWith(0, new Error('test'));
-      dashd.on('error', function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd.syncPercentage = sinon.stub().callsArgWith(0, new Error('test'));
+      stashd.on('error', function(err) {
         log.error.callCount.should.equal(1);
         err.message.should.equal('test');
         done();
@@ -1029,16 +1029,16 @@ describe('Dash Service', function() {
           getBlock: sinon.stub()
         }
       };
-      dashd._updateTip(node, message);
+      stashd._updateTip(node, message);
     });
     it('reset caches and set height', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.syncPercentage = sinon.stub();
-      dashd._resetCaches = sinon.stub();
-      dashd.on('tip', function(height) {
-        dashd._resetCaches.callCount.should.equal(1);
+      var stashd = new StashService(baseConfig);
+      stashd.syncPercentage = sinon.stub();
+      stashd._resetCaches = sinon.stub();
+      stashd.on('tip', function(height) {
+        stashd._resetCaches.callCount.should.equal(1);
         height.should.equal(10);
-        dashd.height.should.equal(10);
+        stashd.height.should.equal(10);
         done();
       });
       var node = {
@@ -1050,13 +1050,13 @@ describe('Dash Service', function() {
           })
         }
       };
-      dashd._updateTip(node, message);
+      stashd._updateTip(node, message);
     });
     it('will NOT update twice for the same hash', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.syncPercentage = sinon.stub();
-      dashd._resetCaches = sinon.stub();
-      dashd.on('tip', function() {
+      var stashd = new StashService(baseConfig);
+      stashd.syncPercentage = sinon.stub();
+      stashd._resetCaches = sinon.stub();
+      stashd.on('tip', function() {
         done();
       });
       var node = {
@@ -1068,23 +1068,23 @@ describe('Dash Service', function() {
           })
         }
       };
-      dashd._updateTip(node, message);
-      dashd._updateTip(node, message);
+      stashd._updateTip(node, message);
+      stashd._updateTip(node, message);
     });
     it('will not call syncPercentage if node is stopping', function(done) {
       var config = {
         node: {
-          network: dashcore.Networks.testnet
+          network: stashcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var dashd = new DashService(config);
-      dashd.syncPercentage = sinon.stub();
-      dashd._resetCaches = sinon.stub();
-      dashd.node.stopping = true;
+      var stashd = new StashService(config);
+      stashd.syncPercentage = sinon.stub();
+      stashd._resetCaches = sinon.stub();
+      stashd.node.stopping = true;
       var node = {
         client: {
           getBlock: sinon.stub().callsArgWith(1, null, {
@@ -1094,209 +1094,209 @@ describe('Dash Service', function() {
           })
         }
       };
-      dashd.on('tip', function() {
-        dashd.syncPercentage.callCount.should.equal(0);
+      stashd.on('tip', function() {
+        stashd.syncPercentage.callCount.should.equal(0);
         done();
       });
-      dashd._updateTip(node, message);
+      stashd._updateTip(node, message);
     });
   });
 
   describe('#_getAddressesFromTransaction', function() {
-    it('will get results using dashcore.Transaction', function() {
-      var dashd = new DashService(baseConfig);
+    it('will get results using stashcore.Transaction', function() {
+      var stashd = new StashService(baseConfig);
       var wif = 'XGLgPK8gbmzU7jcbw34Pj55AXV7SmG6carKuiwtu4WtvTjyTbpwX';
-      var privkey = dashcore.PrivateKey.fromWIF(wif);
-      var inputAddress = privkey.toAddress(dashcore.Networks.testnet);
-      var outputAddress = dashcore.Address('8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi');
-      var tx = dashcore.Transaction();
+      var privkey = stashcore.PrivateKey.fromWIF(wif);
+      var inputAddress = privkey.toAddress(stashcore.Networks.testnet);
+      var outputAddress = stashcore.Address('8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi');
+      var tx = stashcore.Transaction();
       tx.from({
         txid: '4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b',
         outputIndex: 0,
-        script: dashcore.Script(inputAddress),
+        script: stashcore.Script(inputAddress),
         address: inputAddress.toString(),
         satoshis: 5000000000
       });
       tx.to(outputAddress, 5000000000);
       tx.sign(privkey);
-      var addresses = dashd._getAddressesFromTransaction(tx);
+      var addresses = stashd._getAddressesFromTransaction(tx);
       addresses.length.should.equal(2);
       addresses[0].should.equal(inputAddress.toString());
       addresses[1].should.equal(outputAddress.toString());
     });
     it('will handle non-standard script types', function() {
-      var dashd = new DashService(baseConfig);
-      var tx = dashcore.Transaction();
-      tx.addInput(dashcore.Transaction.Input({
+      var stashd = new StashService(baseConfig);
+      var tx = stashcore.Transaction();
+      tx.addInput(stashcore.Transaction.Input({
         prevTxId: '4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b',
-        script: dashcore.Script('OP_TRUE'),
+        script: stashcore.Script('OP_TRUE'),
         outputIndex: 1,
         output: {
-          script: dashcore.Script('OP_TRUE'),
+          script: stashcore.Script('OP_TRUE'),
           satoshis: 5000000000
         }
       }));
-      tx.addOutput(dashcore.Transaction.Output({
-        script: dashcore.Script('OP_TRUE'),
+      tx.addOutput(stashcore.Transaction.Output({
+        script: stashcore.Script('OP_TRUE'),
         satoshis: 5000000000
       }));
-      var addresses = dashd._getAddressesFromTransaction(tx);
+      var addresses = stashd._getAddressesFromTransaction(tx);
       addresses.length.should.equal(0);
     });
     it('will handle unparsable script types or missing input script', function() {
-      var dashd = new DashService(baseConfig);
-      var tx = dashcore.Transaction();
-      tx.addOutput(dashcore.Transaction.Output({
+      var stashd = new StashService(baseConfig);
+      var tx = stashcore.Transaction();
+      tx.addOutput(stashcore.Transaction.Output({
         script: new Buffer('4c', 'hex'),
         satoshis: 5000000000
       }));
-      var addresses = dashd._getAddressesFromTransaction(tx);
+      var addresses = stashd._getAddressesFromTransaction(tx);
       addresses.length.should.equal(0);
     });
     it('will return unique values', function() {
-      var dashd = new DashService(baseConfig);
-      var tx = dashcore.Transaction();
-      var address = dashcore.Address('8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi');
-      tx.addOutput(dashcore.Transaction.Output({
-        script: dashcore.Script(address),
+      var stashd = new StashService(baseConfig);
+      var tx = stashcore.Transaction();
+      var address = stashcore.Address('8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi');
+      tx.addOutput(stashcore.Transaction.Output({
+        script: stashcore.Script(address),
         satoshis: 5000000000
       }));
-      tx.addOutput(dashcore.Transaction.Output({
-        script: dashcore.Script(address),
+      tx.addOutput(stashcore.Transaction.Output({
+        script: stashcore.Script(address),
         satoshis: 5000000000
       }));
-      var addresses = dashd._getAddressesFromTransaction(tx);
+      var addresses = stashd._getAddressesFromTransaction(tx);
       addresses.length.should.equal(1);
     });
   });
 
   describe('#_notifyAddressTxidSubscribers', function() {
     it('will emit event if matching addresses', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd._getAddressesFromTransaction = sinon.stub().returns([address]);
+      stashd._getAddressesFromTransaction = sinon.stub().returns([address]);
       var emitter = new EventEmitter();
-      dashd.subscriptions.address[address] = [emitter];
+      stashd.subscriptions.address[address] = [emitter];
       var txid = '46f24e0c274fc07708b781963576c4c5d5625d926dbb0a17fa865dcd9fe58ea0';
       var transaction = {};
-      emitter.on('dashd/addresstxid', function(data) {
+      emitter.on('stashd/addresstxid', function(data) {
         data.address.should.equal(address);
         data.txid.should.equal(txid);
         done();
       });
       sinon.spy(emitter, 'emit');
-      dashd._notifyAddressTxidSubscribers(txid, transaction);
+      stashd._notifyAddressTxidSubscribers(txid, transaction);
       emitter.emit.callCount.should.equal(1);
     });
     it('will NOT emit event without matching addresses', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd._getAddressesFromTransaction = sinon.stub().returns([address]);
+      stashd._getAddressesFromTransaction = sinon.stub().returns([address]);
       var emitter = new EventEmitter();
       var txid = '46f24e0c274fc07708b781963576c4c5d5625d926dbb0a17fa865dcd9fe58ea0';
       var transaction = {};
       emitter.emit = sinon.stub();
-      dashd._notifyAddressTxidSubscribers(txid, transaction);
+      stashd._notifyAddressTxidSubscribers(txid, transaction);
       emitter.emit.callCount.should.equal(0);
     });
   });
 
   describe('#_zmqTransactionHandler', function() {
     it('will emit to subscribers', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var expectedBuffer = new Buffer(txhex, 'hex');
       var emitter = new EventEmitter();
-      dashd.subscriptions.rawtransaction.push(emitter);
-      emitter.on('dashd/rawtransaction', function(hex) {
+      stashd.subscriptions.rawtransaction.push(emitter);
+      emitter.on('stashd/rawtransaction', function(hex) {
         hex.should.be.a('string');
         hex.should.equal(expectedBuffer.toString('hex'));
         done();
       });
       var node = {};
-      dashd._zmqTransactionHandler(node, expectedBuffer);
+      stashd._zmqTransactionHandler(node, expectedBuffer);
     });
     it('will NOT emit to subscribers more than once for the same tx', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var expectedBuffer = new Buffer(txhex, 'hex');
       var emitter = new EventEmitter();
-      dashd.subscriptions.rawtransaction.push(emitter);
-      emitter.on('dashd/rawtransaction', function() {
+      stashd.subscriptions.rawtransaction.push(emitter);
+      emitter.on('stashd/rawtransaction', function() {
         done();
       });
       var node = {};
-      dashd._zmqTransactionHandler(node, expectedBuffer);
-      dashd._zmqTransactionHandler(node, expectedBuffer);
+      stashd._zmqTransactionHandler(node, expectedBuffer);
+      stashd._zmqTransactionHandler(node, expectedBuffer);
     });
     it('will emit "tx" event', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var expectedBuffer = new Buffer(txhex, 'hex');
-      dashd.on('tx', function(buffer) {
+      stashd.on('tx', function(buffer) {
         buffer.should.be.instanceof(Buffer);
         buffer.toString('hex').should.equal(expectedBuffer.toString('hex'));
         done();
       });
       var node = {};
-      dashd._zmqTransactionHandler(node, expectedBuffer);
+      stashd._zmqTransactionHandler(node, expectedBuffer);
     });
     it('will NOT emit "tx" event more than once for the same tx', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var expectedBuffer = new Buffer(txhex, 'hex');
-      dashd.on('tx', function() {
+      stashd.on('tx', function() {
         done();
       });
       var node = {};
-      dashd._zmqTransactionHandler(node, expectedBuffer);
-      dashd._zmqTransactionHandler(node, expectedBuffer);
+      stashd._zmqTransactionHandler(node, expectedBuffer);
+      stashd._zmqTransactionHandler(node, expectedBuffer);
     });
   });
 
   // TODO: transaction lock test coverage
   describe('#_zmqTransactionLockHandler', function() {
     it('will emit to subscribers', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var expectedBuffer = new Buffer(txhex, 'hex');
       var emitter = new EventEmitter();
-      dashd.subscriptions.transactionlock.push(emitter);
-      emitter.on('dashd/transactionlock', function(hex) {
+      stashd.subscriptions.transactionlock.push(emitter);
+      emitter.on('stashd/transactionlock', function(hex) {
         hex.should.be.a('string');
         hex.should.equal(expectedBuffer.toString('hex'));
         done();
       });
       var node = {};
-      dashd._zmqTransactionLockHandler(node, expectedBuffer);
+      stashd._zmqTransactionLockHandler(node, expectedBuffer);
     });
     it('will NOT emit to subscribers more than once for the same tx', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var expectedBuffer = new Buffer(txhex, 'hex');
       var emitter = new EventEmitter();
-      dashd.subscriptions.transactionlock.push(emitter);
-      emitter.on('dashd/transactionlock', function() {
+      stashd.subscriptions.transactionlock.push(emitter);
+      emitter.on('stashd/transactionlock', function() {
         done();
       });
       var node = {};
-      dashd._zmqTransactionLockHandler(node, expectedBuffer);
-      dashd._zmqTransactionLockHandler(node, expectedBuffer);
+      stashd._zmqTransactionLockHandler(node, expectedBuffer);
+      stashd._zmqTransactionLockHandler(node, expectedBuffer);
     });
     it('will emit "tx" event', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var expectedBuffer = new Buffer(txhex, 'hex');
-      dashd.on('txlock', function(buffer) {
+      stashd.on('txlock', function(buffer) {
         buffer.should.be.instanceof(Buffer);
         buffer.toString('hex').should.equal(expectedBuffer.toString('hex'));
         done();
       });
       var node = {};
-      dashd._zmqTransactionLockHandler(node, expectedBuffer);
+      stashd._zmqTransactionLockHandler(node, expectedBuffer);
     });
     it('will NOT emit "tx" event more than once for the same tx', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var expectedBuffer = new Buffer(txhex, 'hex');
-      dashd.on('txlock', function() {
+      stashd.on('txlock', function() {
         done();
       });
       var node = {};
-      dashd._zmqTransactionLockHandler(node, expectedBuffer);
-      dashd._zmqTransactionLockHandler(node, expectedBuffer);
+      stashd._zmqTransactionLockHandler(node, expectedBuffer);
+      stashd._zmqTransactionLockHandler(node, expectedBuffer);
     });
   });
 
@@ -1309,11 +1309,11 @@ describe('Dash Service', function() {
       sandbox.restore();
     });
     it('log errors, update tip and subscribe to zmq events', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd._updateTip = sinon.stub();
-      dashd._subscribeZmqEvents = sinon.stub();
+      var stashd = new StashService(baseConfig);
+      stashd._updateTip = sinon.stub();
+      stashd._subscribeZmqEvents = sinon.stub();
       var blockEvents = 0;
-      dashd.on('block', function() {
+      stashd.on('block', function() {
         blockEvents++;
       });
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {
@@ -1344,26 +1344,26 @@ describe('Dash Service', function() {
           getBlockchainInfo: getBlockchainInfo
         }
       };
-      dashd._checkSyncedAndSubscribeZmqEvents(node);
+      stashd._checkSyncedAndSubscribeZmqEvents(node);
       setTimeout(function() {
         log.error.callCount.should.equal(2);
         blockEvents.should.equal(11);
-        dashd._updateTip.callCount.should.equal(11);
-        dashd._subscribeZmqEvents.callCount.should.equal(1);
+        stashd._updateTip.callCount.should.equal(11);
+        stashd._subscribeZmqEvents.callCount.should.equal(1);
         done();
       }, 200);
     });
     it('it will clear interval if node is stopping', function(done) {
       var config = {
         node: {
-          network: dashcore.Networks.testnet
+          network: stashcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var dashd = new DashService(config);
+      var stashd = new StashService(config);
       var getBestBlockHash = sinon.stub().callsArgWith(0, {code: -1, message: 'error'});
       var node = {
         _tipUpdateInterval: 1,
@@ -1371,9 +1371,9 @@ describe('Dash Service', function() {
           getBestBlockHash: getBestBlockHash
         }
       };
-      dashd._checkSyncedAndSubscribeZmqEvents(node);
+      stashd._checkSyncedAndSubscribeZmqEvents(node);
       setTimeout(function() {
-        dashd.node.stopping = true;
+        stashd.node.stopping = true;
         var count = getBestBlockHash.callCount;
         setTimeout(function() {
           getBestBlockHash.callCount.should.equal(count);
@@ -1382,9 +1382,9 @@ describe('Dash Service', function() {
       }, 100);
     });
     it('will not set interval if synced is true', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd._updateTip = sinon.stub();
-      dashd._subscribeZmqEvents = sinon.stub();
+      var stashd = new StashService(baseConfig);
+      stashd._updateTip = sinon.stub();
+      stashd._subscribeZmqEvents = sinon.stub();
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {
         result: '00000000000000001bb82a7f5973618cfd3185ba1ded04dd852a653f92a27c45'
       });
@@ -1401,7 +1401,7 @@ describe('Dash Service', function() {
           getBlockchainInfo: getBlockchainInfo
         }
       };
-      dashd._checkSyncedAndSubscribeZmqEvents(node);
+      stashd._checkSyncedAndSubscribeZmqEvents(node);
       setTimeout(function() {
         getBestBlockHash.callCount.should.equal(1);
         getBlockchainInfo.callCount.should.equal(1);
@@ -1412,29 +1412,29 @@ describe('Dash Service', function() {
 
   describe('#_subscribeZmqEvents', function() {
     it('will call subscribe on zmq socket', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var node = {
         zmqSubSocket: {
           subscribe: sinon.stub(),
           on: sinon.stub()
         }
       };
-      dashd._subscribeZmqEvents(node);
+      stashd._subscribeZmqEvents(node);
       node.zmqSubSocket.subscribe.callCount.should.equal(3);
       node.zmqSubSocket.subscribe.args[0][0].should.equal('hashblock');
       node.zmqSubSocket.subscribe.args[1][0].should.equal('rawtx');
       node.zmqSubSocket.subscribe.args[2][0].should.equal('rawtxlock');
     });
     it('will call relevant handler for rawtx topics', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd._zmqTransactionHandler = sinon.stub();
+      var stashd = new StashService(baseConfig);
+      stashd._zmqTransactionHandler = sinon.stub();
       var node = {
         zmqSubSocket: new EventEmitter()
       };
       node.zmqSubSocket.subscribe = sinon.stub();
-      dashd._subscribeZmqEvents(node);
+      stashd._subscribeZmqEvents(node);
       node.zmqSubSocket.on('message', function() {
-        dashd._zmqTransactionHandler.callCount.should.equal(1);
+        stashd._zmqTransactionHandler.callCount.should.equal(1);
         done();
       });
       var topic = new Buffer('rawtx', 'utf8');
@@ -1442,15 +1442,15 @@ describe('Dash Service', function() {
       node.zmqSubSocket.emit('message', topic, message);
     });
     it('will call relevant handler for hashblock topics', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd._zmqBlockHandler = sinon.stub();
+      var stashd = new StashService(baseConfig);
+      stashd._zmqBlockHandler = sinon.stub();
       var node = {
         zmqSubSocket: new EventEmitter()
       };
       node.zmqSubSocket.subscribe = sinon.stub();
-      dashd._subscribeZmqEvents(node);
+      stashd._subscribeZmqEvents(node);
       node.zmqSubSocket.on('message', function() {
-        dashd._zmqBlockHandler.callCount.should.equal(1);
+        stashd._zmqBlockHandler.callCount.should.equal(1);
         done();
       });
       var topic = new Buffer('hashblock', 'utf8');
@@ -1458,17 +1458,17 @@ describe('Dash Service', function() {
       node.zmqSubSocket.emit('message', topic, message);
     });
     it('will ignore unknown topic types', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd._zmqBlockHandler = sinon.stub();
-      dashd._zmqTransactionHandler = sinon.stub();
+      var stashd = new StashService(baseConfig);
+      stashd._zmqBlockHandler = sinon.stub();
+      stashd._zmqTransactionHandler = sinon.stub();
       var node = {
         zmqSubSocket: new EventEmitter()
       };
       node.zmqSubSocket.subscribe = sinon.stub();
-      dashd._subscribeZmqEvents(node);
+      stashd._subscribeZmqEvents(node);
       node.zmqSubSocket.on('message', function() {
-        dashd._zmqBlockHandler.callCount.should.equal(0);
-        dashd._zmqTransactionHandler.callCount.should.equal(0);
+        stashd._zmqBlockHandler.callCount.should.equal(0);
+        stashd._zmqTransactionHandler.callCount.should.equal(0);
         done();
       });
       var topic = new Buffer('unknown', 'utf8');
@@ -1485,14 +1485,14 @@ describe('Dash Service', function() {
       var socketFunc = function() {
         return socket;
       };
-      var DashService = proxyquire('../../lib/services/dashd', {
+      var StashService = proxyquire('../../lib/services/stashd', {
         zmq: {
           socket: socketFunc
         }
       });
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var node = {};
-      dashd._initZmqSubSocket(node, 'url');
+      stashd._initZmqSubSocket(node, 'url');
       node.zmqSubSocket.should.equal(socket);
       socket.connect.callCount.should.equal(1);
       socket.connect.args[0][0].should.equal('url');
@@ -1511,7 +1511,7 @@ describe('Dash Service', function() {
       sandbox.restore();
     });
     it('give error from client getblockchaininfo', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var node = {
         _reindex: true,
         _reindexWait: 1,
@@ -1519,14 +1519,14 @@ describe('Dash Service', function() {
           getBlockchainInfo: sinon.stub().callsArgWith(0, {code: -1 , message: 'Test error'})
         }
       };
-      dashd._checkReindex(node, function(err) {
+      stashd._checkReindex(node, function(err) {
         should.exist(err);
         err.should.be.instanceof(errors.RPCError);
         done();
       });
     });
     it('will wait until sync is 100 percent', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var percent = 0.89;
       var node = {
         _reindex: true,
@@ -1542,18 +1542,18 @@ describe('Dash Service', function() {
           }
         }
       };
-      dashd._checkReindex(node, function() {
+      stashd._checkReindex(node, function() {
         node._reindex.should.equal(false);
         log.info.callCount.should.equal(11);
         done();
       });
     });
     it('will call callback if reindex is not enabled', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var node = {
         _reindex: false
       };
-      dashd._checkReindex(node, function() {
+      stashd._checkReindex(node, function() {
         node._reindex.should.equal(false);
         done();
       });
@@ -1569,21 +1569,21 @@ describe('Dash Service', function() {
       sandbox.restore();
     });
     it('will give rpc from client getbestblockhash', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, {code: -1, message: 'Test error'});
       var node = {
         client: {
           getBestBlockHash: getBestBlockHash
         }
       };
-      dashd._loadTipFromNode(node, function(err) {
+      stashd._loadTipFromNode(node, function(err) {
         err.should.be.instanceof(Error);
         log.warn.callCount.should.equal(0);
         done();
       });
     });
     it('will give rpc from client getblock', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {
         result: '00000000000000001bb82a7f5973618cfd3185ba1ded04dd852a653f92a27c45'
       });
@@ -1594,7 +1594,7 @@ describe('Dash Service', function() {
           getBlock: getBlock
         }
       };
-      dashd._loadTipFromNode(node, function(err) {
+      stashd._loadTipFromNode(node, function(err) {
         getBlock.args[0][0].should.equal('00000000000000001bb82a7f5973618cfd3185ba1ded04dd852a653f92a27c45');
         err.should.be.instanceof(Error);
         log.warn.callCount.should.equal(0);
@@ -1602,21 +1602,21 @@ describe('Dash Service', function() {
       });
     });
     it('will log when error is RPC_IN_WARMUP', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, {code: -28, message: 'Verifying blocks...'});
       var node = {
         client: {
           getBestBlockHash: getBestBlockHash
         }
       };
-      dashd._loadTipFromNode(node, function(err) {
+      stashd._loadTipFromNode(node, function(err) {
         err.should.be.instanceof(Error);
         log.warn.callCount.should.equal(1);
         done();
       });
     });
     it('will set height and emit tip', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {
         result: '00000000000000001bb82a7f5973618cfd3185ba1ded04dd852a653f92a27c45'
       });
@@ -1631,12 +1631,12 @@ describe('Dash Service', function() {
           getBlock: getBlock
         }
       };
-      dashd.on('tip', function(height) {
+      stashd.on('tip', function(height) {
         height.should.equal(100);
-        dashd.height.should.equal(100);
+        stashd.height.should.equal(100);
         done();
       });
-      dashd._loadTipFromNode(node, function(err) {
+      stashd._loadTipFromNode(node, function(err) {
         if (err) {
           return done(err);
         }
@@ -1658,20 +1658,20 @@ describe('Dash Service', function() {
       var error = new Error('Test error');
       error.code = 'ENOENT';
       readFile.onCall(1).callsArgWith(2, error);
-      var TestDashService = proxyquire('../../lib/services/dashd', {
+      var TestStashService = proxyquire('../../lib/services/stashd', {
         fs: {
           readFile: readFile
         }
       });
-      var dashd = new TestDashService(baseConfig);
-      dashd.spawnStopTime = 1;
-      dashd._process = {};
-      dashd._process.kill = sinon.stub();
-      dashd._stopSpawnedDash(function(err) {
+      var stashd = new TestStashService(baseConfig);
+      stashd.spawnStopTime = 1;
+      stashd._process = {};
+      stashd._process.kill = sinon.stub();
+      stashd._stopSpawnedStash(function(err) {
         if (err) {
           return done(err);
         }
-        dashd._process.kill.callCount.should.equal(1);
+        stashd._process.kill.callCount.should.equal(1);
         log.warn.callCount.should.equal(1);
         done();
       });
@@ -1682,22 +1682,22 @@ describe('Dash Service', function() {
       var error = new Error('Test error');
       error.code = 'ENOENT';
       readFile.onCall(1).callsArgWith(2, error);
-      var TestDashService = proxyquire('../../lib/services/dashd', {
+      var TestStashService = proxyquire('../../lib/services/stashd', {
         fs: {
           readFile: readFile
         }
       });
-      var dashd = new TestDashService(baseConfig);
-      dashd.spawnStopTime = 1;
-      dashd._process = {};
+      var stashd = new TestStashService(baseConfig);
+      stashd.spawnStopTime = 1;
+      stashd._process = {};
       var error2 = new Error('Test error');
       error2.code = 'ESRCH';
-      dashd._process.kill = sinon.stub().throws(error2);
-      dashd._stopSpawnedDash(function(err) {
+      stashd._process.kill = sinon.stub().throws(error2);
+      stashd._stopSpawnedStash(function(err) {
         if (err) {
           return done(err);
         }
-        dashd._process.kill.callCount.should.equal(1);
+        stashd._process.kill.callCount.should.equal(1);
         log.warn.callCount.should.equal(2);
         done();
       });
@@ -1705,16 +1705,16 @@ describe('Dash Service', function() {
     it('it will attempt to kill process with NaN', function(done) {
       var readFile = sandbox.stub();
       readFile.onCall(0).callsArgWith(2, null, '     ');
-      var TestDashService = proxyquire('../../lib/services/dashd', {
+      var TestStashService = proxyquire('../../lib/services/stashd', {
         fs: {
           readFile: readFile
         }
       });
-      var dashd = new TestDashService(baseConfig);
-      dashd.spawnStopTime = 1;
-      dashd._process = {};
-      dashd._process.kill = sinon.stub();
-      dashd._stopSpawnedDash(function(err) {
+      var stashd = new TestStashService(baseConfig);
+      stashd.spawnStopTime = 1;
+      stashd._process = {};
+      stashd._process.kill = sinon.stub();
+      stashd._stopSpawnedStash(function(err) {
         if (err) {
           return done(err);
         }
@@ -1724,16 +1724,16 @@ describe('Dash Service', function() {
     it('it will attempt to kill process without pid', function(done) {
       var readFile = sandbox.stub();
       readFile.onCall(0).callsArgWith(2, null, '');
-      var TestDashService = proxyquire('../../lib/services/dashd', {
+      var TestStashService = proxyquire('../../lib/services/stashd', {
         fs: {
           readFile: readFile
         }
       });
-      var dashd = new TestDashService(baseConfig);
-      dashd.spawnStopTime = 1;
-      dashd._process = {};
-      dashd._process.kill = sinon.stub();
-      dashd._stopSpawnedDash(function(err) {
+      var stashd = new TestStashService(baseConfig);
+      stashd.spawnStopTime = 1;
+      stashd._process = {};
+      stashd._process.kill = sinon.stub();
+      stashd._stopSpawnedStash(function(err) {
         if (err) {
           return done(err);
         }
@@ -1753,20 +1753,20 @@ describe('Dash Service', function() {
       sandbox.restore();
     });
     it('will give error from spawn config', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd._loadSpawnConfiguration = sinon.stub();
-      dashd._loadSpawnConfiguration = sinon.stub().throws(new Error('test'));
-      dashd._spawnChildProcess(function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd._loadSpawnConfiguration = sinon.stub();
+      stashd._loadSpawnConfiguration = sinon.stub().throws(new Error('test'));
+      stashd._spawnChildProcess(function(err) {
         err.should.be.instanceof(Error);
         err.message.should.equal('test');
         done();
       });
     });
-    it('will give error from stopSpawnedDash', function() {
-      var dashd = new DashService(baseConfig);
-      dashd._loadSpawnConfiguration = sinon.stub();
-      dashd._stopSpawnedDash = sinon.stub().callsArgWith(0, new Error('test'));
-      dashd._spawnChildProcess(function(err) {
+    it('will give error from stopSpawnedStash', function() {
+      var stashd = new StashService(baseConfig);
+      stashd._loadSpawnConfiguration = sinon.stub();
+      stashd._stopSpawnedStash = sinon.stub().callsArgWith(0, new Error('test'));
+      stashd._spawnChildProcess(function(err) {
         err.should.be.instanceOf(Error);
         err.message.should.equal('test');
       });
@@ -1774,7 +1774,7 @@ describe('Dash Service', function() {
     it('will exit spawn if shutdown', function() {
       var config = {
         node: {
-          network: dashcore.Networks.testnet
+          network: stashcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
@@ -1783,7 +1783,7 @@ describe('Dash Service', function() {
       };
       var process = new EventEmitter();
       var spawn = sinon.stub().returns(process);
-      var TestDashService = proxyquire('../../lib/services/dashd', {
+      var TestStashService = proxyquire('../../lib/services/stashd', {
         fs: {
           readFileSync: readFileSync
         },
@@ -1791,12 +1791,12 @@ describe('Dash Service', function() {
           spawn: spawn
         }
       });
-      var dashd = new TestDashService(config);
-      dashd.spawn = {};
-      dashd._loadSpawnConfiguration = sinon.stub();
-      dashd._stopSpawnedDash = sinon.stub().callsArgWith(0, null);
-      dashd.node.stopping = true;
-      dashd._spawnChildProcess(function(err) {
+      var stashd = new TestStashService(config);
+      stashd.spawn = {};
+      stashd._loadSpawnConfiguration = sinon.stub();
+      stashd._stopSpawnedStash = sinon.stub().callsArgWith(0, null);
+      stashd.node.stopping = true;
+      stashd._spawnChildProcess(function(err) {
         err.should.be.instanceOf(Error);
         err.message.should.match(/Stopping while trying to spawn/);
       });
@@ -1804,7 +1804,7 @@ describe('Dash Service', function() {
     it('will include network with spawn command and init zmq/rpc on node', function(done) {
       var process = new EventEmitter();
       var spawn = sinon.stub().returns(process);
-      var TestDashService = proxyquire('../../lib/services/dashd', {
+      var TestStashService = proxyquire('../../lib/services/stashd', {
         fs: {
           readFileSync: readFileSync
         },
@@ -1812,51 +1812,51 @@ describe('Dash Service', function() {
           spawn: spawn
         }
       });
-      var dashd = new TestDashService(baseConfig);
+      var stashd = new TestStashService(baseConfig);
 
-      dashd._loadSpawnConfiguration = sinon.stub();
-      dashd.spawn = {};
-      dashd.spawn.exec = 'testexec';
-      dashd.spawn.configPath = 'testdir/dash.conf';
-      dashd.spawn.datadir = 'testdir';
-      dashd.spawn.config = {};
-      dashd.spawn.config.rpcport = 20001;
-      dashd.spawn.config.rpcuser = 'dash';
-      dashd.spawn.config.rpcpassword = 'password';
-      dashd.spawn.config.zmqpubrawtx = 'tcp://127.0.0.1:30001';
-      dashd.spawn.config.zmqpubrawtxlock = 'tcp://127.0.0.1:30001';
+      stashd._loadSpawnConfiguration = sinon.stub();
+      stashd.spawn = {};
+      stashd.spawn.exec = 'testexec';
+      stashd.spawn.configPath = 'testdir/stash.conf';
+      stashd.spawn.datadir = 'testdir';
+      stashd.spawn.config = {};
+      stashd.spawn.config.rpcport = 20001;
+      stashd.spawn.config.rpcuser = 'stash';
+      stashd.spawn.config.rpcpassword = 'password';
+      stashd.spawn.config.zmqpubrawtx = 'tcp://127.0.0.1:30001';
+      stashd.spawn.config.zmqpubrawtxlock = 'tcp://127.0.0.1:30001';
 
-      dashd._loadTipFromNode = sinon.stub().callsArgWith(1, null);
-      dashd._initZmqSubSocket = sinon.stub();
-      dashd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
-      dashd._checkReindex = sinon.stub().callsArgWith(1, null);
-      dashd._spawnChildProcess(function(err, node) {
+      stashd._loadTipFromNode = sinon.stub().callsArgWith(1, null);
+      stashd._initZmqSubSocket = sinon.stub();
+      stashd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
+      stashd._checkReindex = sinon.stub().callsArgWith(1, null);
+      stashd._spawnChildProcess(function(err, node) {
         should.not.exist(err);
         spawn.callCount.should.equal(1);
         spawn.args[0][0].should.equal('testexec');
         spawn.args[0][1].should.deep.equal([
-          '--conf=testdir/dash.conf',
+          '--conf=testdir/stash.conf',
           '--datadir=testdir',
           '--testnet'
         ]);
         spawn.args[0][2].should.deep.equal({
           stdio: 'inherit'
         });
-        dashd._loadTipFromNode.callCount.should.equal(1);
-        dashd._initZmqSubSocket.callCount.should.equal(1);
-        should.exist(dashd._initZmqSubSocket.args[0][0].client);
-        dashd._initZmqSubSocket.args[0][1].should.equal('tcp://127.0.0.1:30001');
-        dashd._checkSyncedAndSubscribeZmqEvents.callCount.should.equal(1);
-        should.exist(dashd._checkSyncedAndSubscribeZmqEvents.args[0][0].client);
+        stashd._loadTipFromNode.callCount.should.equal(1);
+        stashd._initZmqSubSocket.callCount.should.equal(1);
+        should.exist(stashd._initZmqSubSocket.args[0][0].client);
+        stashd._initZmqSubSocket.args[0][1].should.equal('tcp://127.0.0.1:30001');
+        stashd._checkSyncedAndSubscribeZmqEvents.callCount.should.equal(1);
+        should.exist(stashd._checkSyncedAndSubscribeZmqEvents.args[0][0].client);
         should.exist(node);
         should.exist(node.client);
         done();
       });
     });
-    it('will respawn dashd spawned process', function(done) {
+    it('will respawn stashd spawned process', function(done) {
       var process = new EventEmitter();
       var spawn = sinon.stub().returns(process);
-      var TestDashService = proxyquire('../../lib/services/dashd', {
+      var TestStashService = proxyquire('../../lib/services/stashd', {
         fs: {
           readFileSync: readFileSync
         },
@@ -1864,27 +1864,27 @@ describe('Dash Service', function() {
           spawn: spawn
         }
       });
-      var dashd = new TestDashService(baseConfig);
-      dashd._loadSpawnConfiguration = sinon.stub();
-      dashd.spawn = {};
-      dashd.spawn.exec = 'dashd';
-      dashd.spawn.datadir = '/tmp/dash';
-      dashd.spawn.configPath = '/tmp/dash/dash.conf';
-      dashd.spawn.config = {};
-      dashd.spawnRestartTime = 1;
-      dashd._loadTipFromNode = sinon.stub().callsArg(1);
-      dashd._initZmqSubSocket = sinon.stub();
-      dashd._checkReindex = sinon.stub().callsArg(1);
-      dashd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
-      dashd._stopSpawnedDash = sinon.stub().callsArg(0);
-      sinon.spy(dashd, '_spawnChildProcess');
-      dashd._spawnChildProcess(function(err) {
+      var stashd = new TestStashService(baseConfig);
+      stashd._loadSpawnConfiguration = sinon.stub();
+      stashd.spawn = {};
+      stashd.spawn.exec = 'stashd';
+      stashd.spawn.datadir = '/tmp/stash';
+      stashd.spawn.configPath = '/tmp/stash/stash.conf';
+      stashd.spawn.config = {};
+      stashd.spawnRestartTime = 1;
+      stashd._loadTipFromNode = sinon.stub().callsArg(1);
+      stashd._initZmqSubSocket = sinon.stub();
+      stashd._checkReindex = sinon.stub().callsArg(1);
+      stashd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
+      stashd._stopSpawnedStash = sinon.stub().callsArg(0);
+      sinon.spy(stashd, '_spawnChildProcess');
+      stashd._spawnChildProcess(function(err) {
         if (err) {
           return done(err);
         }
         process.once('exit', function() {
           setTimeout(function() {
-            dashd._spawnChildProcess.callCount.should.equal(2);
+            stashd._spawnChildProcess.callCount.should.equal(2);
             done();
           }, 5);
         });
@@ -1894,7 +1894,7 @@ describe('Dash Service', function() {
     it('will emit error during respawn', function(done) {
       var process = new EventEmitter();
       var spawn = sinon.stub().returns(process);
-      var TestDashService = proxyquire('../../lib/services/dashd', {
+      var TestStashService = proxyquire('../../lib/services/stashd', {
         fs: {
           readFileSync: readFileSync
         },
@@ -1902,26 +1902,26 @@ describe('Dash Service', function() {
           spawn: spawn
         }
       });
-      var dashd = new TestDashService(baseConfig);
-      dashd._loadSpawnConfiguration = sinon.stub();
-      dashd.spawn = {};
-      dashd.spawn.exec = 'dashd';
-      dashd.spawn.datadir = '/tmp/dash';
-      dashd.spawn.configPath = '/tmp/dash/dash.conf';
-      dashd.spawn.config = {};
-      dashd.spawnRestartTime = 1;
-      dashd._loadTipFromNode = sinon.stub().callsArg(1);
-      dashd._initZmqSubSocket = sinon.stub();
-      dashd._checkReindex = sinon.stub().callsArg(1);
-      dashd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
-      dashd._stopSpawnedDash = sinon.stub().callsArg(0);
-      sinon.spy(dashd, '_spawnChildProcess');
-      dashd._spawnChildProcess(function(err) {
+      var stashd = new TestStashService(baseConfig);
+      stashd._loadSpawnConfiguration = sinon.stub();
+      stashd.spawn = {};
+      stashd.spawn.exec = 'stashd';
+      stashd.spawn.datadir = '/tmp/stash';
+      stashd.spawn.configPath = '/tmp/stash/stash.conf';
+      stashd.spawn.config = {};
+      stashd.spawnRestartTime = 1;
+      stashd._loadTipFromNode = sinon.stub().callsArg(1);
+      stashd._initZmqSubSocket = sinon.stub();
+      stashd._checkReindex = sinon.stub().callsArg(1);
+      stashd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
+      stashd._stopSpawnedStash = sinon.stub().callsArg(0);
+      sinon.spy(stashd, '_spawnChildProcess');
+      stashd._spawnChildProcess(function(err) {
         if (err) {
           return done(err);
         }
-        dashd._spawnChildProcess = sinon.stub().callsArgWith(0, new Error('test'));
-        dashd.on('error', function(err) {
+        stashd._spawnChildProcess = sinon.stub().callsArgWith(0, new Error('test'));
+        stashd.on('error', function(err) {
           err.should.be.instanceOf(Error);
           err.message.should.equal('test');
           done();
@@ -1929,10 +1929,10 @@ describe('Dash Service', function() {
         process.emit('exit', 1);
       });
     });
-    it('will NOT respawn dashd spawned process if shutting down', function(done) {
+    it('will NOT respawn stashd spawned process if shutting down', function(done) {
       var process = new EventEmitter();
       var spawn = sinon.stub().returns(process);
-      var TestDashService = proxyquire('../../lib/services/dashd', {
+      var TestStashService = proxyquire('../../lib/services/stashd', {
         fs: {
           readFileSync: readFileSync
         },
@@ -1942,35 +1942,35 @@ describe('Dash Service', function() {
       });
       var config = {
         node: {
-          network: dashcore.Networks.testnet
+          network: stashcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var dashd = new TestDashService(config);
-      dashd._loadSpawnConfiguration = sinon.stub();
-      dashd.spawn = {};
-      dashd.spawn.exec = 'dashd';
-      dashd.spawn.datadir = '/tmp/dash';
-      dashd.spawn.configPath = '/tmp/dash/dash.conf';
-      dashd.spawn.config = {};
-      dashd.spawnRestartTime = 1;
-      dashd._loadTipFromNode = sinon.stub().callsArg(1);
-      dashd._initZmqSubSocket = sinon.stub();
-      dashd._checkReindex = sinon.stub().callsArg(1);
-      dashd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
-      dashd._stopSpawnedDash = sinon.stub().callsArg(0);
-      sinon.spy(dashd, '_spawnChildProcess');
-      dashd._spawnChildProcess(function(err) {
+      var stashd = new TestStashService(config);
+      stashd._loadSpawnConfiguration = sinon.stub();
+      stashd.spawn = {};
+      stashd.spawn.exec = 'stashd';
+      stashd.spawn.datadir = '/tmp/stash';
+      stashd.spawn.configPath = '/tmp/stash/stash.conf';
+      stashd.spawn.config = {};
+      stashd.spawnRestartTime = 1;
+      stashd._loadTipFromNode = sinon.stub().callsArg(1);
+      stashd._initZmqSubSocket = sinon.stub();
+      stashd._checkReindex = sinon.stub().callsArg(1);
+      stashd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
+      stashd._stopSpawnedStash = sinon.stub().callsArg(0);
+      sinon.spy(stashd, '_spawnChildProcess');
+      stashd._spawnChildProcess(function(err) {
         if (err) {
           return done(err);
         }
-        dashd.node.stopping = true;
+        stashd.node.stopping = true;
         process.once('exit', function() {
           setTimeout(function() {
-            dashd._spawnChildProcess.callCount.should.equal(1);
+            stashd._spawnChildProcess.callCount.should.equal(1);
             done();
           }, 5);
         });
@@ -1980,7 +1980,7 @@ describe('Dash Service', function() {
     it('will give error after 60 retries', function(done) {
       var process = new EventEmitter();
       var spawn = sinon.stub().returns(process);
-      var TestDashService = proxyquire('../../lib/services/dashd', {
+      var TestStashService = proxyquire('../../lib/services/stashd', {
         fs: {
           readFileSync: readFileSync
         },
@@ -1988,22 +1988,22 @@ describe('Dash Service', function() {
           spawn: spawn
         }
       });
-      var dashd = new TestDashService(baseConfig);
-      dashd.startRetryInterval = 1;
-      dashd._loadSpawnConfiguration = sinon.stub();
-      dashd.spawn = {};
-      dashd.spawn.exec = 'testexec';
-      dashd.spawn.configPath = 'testdir/dash.conf';
-      dashd.spawn.datadir = 'testdir';
-      dashd.spawn.config = {};
-      dashd.spawn.config.rpcport = 20001;
-      dashd.spawn.config.rpcuser = 'dash';
-      dashd.spawn.config.rpcpassword = 'password';
-      dashd.spawn.config.zmqpubrawtx = 'tcp://127.0.0.1:30001';
-      dashd.spawn.config.zmqpubrawtxlock = 'tcp://127.0.0.1:30001';
-      dashd._loadTipFromNode = sinon.stub().callsArgWith(1, new Error('test'));
-      dashd._spawnChildProcess(function(err) {
-        dashd._loadTipFromNode.callCount.should.equal(60);
+      var stashd = new TestStashService(baseConfig);
+      stashd.startRetryInterval = 1;
+      stashd._loadSpawnConfiguration = sinon.stub();
+      stashd.spawn = {};
+      stashd.spawn.exec = 'testexec';
+      stashd.spawn.configPath = 'testdir/stash.conf';
+      stashd.spawn.datadir = 'testdir';
+      stashd.spawn.config = {};
+      stashd.spawn.config.rpcport = 20001;
+      stashd.spawn.config.rpcuser = 'stash';
+      stashd.spawn.config.rpcpassword = 'password';
+      stashd.spawn.config.zmqpubrawtx = 'tcp://127.0.0.1:30001';
+      stashd.spawn.config.zmqpubrawtxlock = 'tcp://127.0.0.1:30001';
+      stashd._loadTipFromNode = sinon.stub().callsArgWith(1, new Error('test'));
+      stashd._spawnChildProcess(function(err) {
+        stashd._loadTipFromNode.callCount.should.equal(60);
         err.should.be.instanceof(Error);
         done();
       });
@@ -2011,7 +2011,7 @@ describe('Dash Service', function() {
     it('will give error from check reindex', function(done) {
       var process = new EventEmitter();
       var spawn = sinon.stub().returns(process);
-      var TestDashService = proxyquire('../../lib/services/dashd', {
+      var TestStashService = proxyquire('../../lib/services/stashd', {
         fs: {
           readFileSync: readFileSync
         },
@@ -2019,26 +2019,26 @@ describe('Dash Service', function() {
           spawn: spawn
         }
       });
-      var dashd = new TestDashService(baseConfig);
+      var stashd = new TestStashService(baseConfig);
 
-      dashd._loadSpawnConfiguration = sinon.stub();
-      dashd.spawn = {};
-      dashd.spawn.exec = 'testexec';
-      dashd.spawn.configPath = 'testdir/dash.conf';
-      dashd.spawn.datadir = 'testdir';
-      dashd.spawn.config = {};
-      dashd.spawn.config.rpcport = 20001;
-      dashd.spawn.config.rpcuser = 'dash';
-      dashd.spawn.config.rpcpassword = 'password';
-      dashd.spawn.config.zmqpubrawtx = 'tcp://127.0.0.1:30001';
-      dashd.spawn.config.zmqpubrawtxlock = 'tcp://127.0.0.1:30001';
+      stashd._loadSpawnConfiguration = sinon.stub();
+      stashd.spawn = {};
+      stashd.spawn.exec = 'testexec';
+      stashd.spawn.configPath = 'testdir/stash.conf';
+      stashd.spawn.datadir = 'testdir';
+      stashd.spawn.config = {};
+      stashd.spawn.config.rpcport = 20001;
+      stashd.spawn.config.rpcuser = 'stash';
+      stashd.spawn.config.rpcpassword = 'password';
+      stashd.spawn.config.zmqpubrawtx = 'tcp://127.0.0.1:30001';
+      stashd.spawn.config.zmqpubrawtxlock = 'tcp://127.0.0.1:30001';
 
-      dashd._loadTipFromNode = sinon.stub().callsArgWith(1, null);
-      dashd._initZmqSubSocket = sinon.stub();
-      dashd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
-      dashd._checkReindex = sinon.stub().callsArgWith(1, new Error('test'));
+      stashd._loadTipFromNode = sinon.stub().callsArgWith(1, null);
+      stashd._initZmqSubSocket = sinon.stub();
+      stashd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
+      stashd._checkReindex = sinon.stub().callsArgWith(1, new Error('test'));
 
-      dashd._spawnChildProcess(function(err) {
+      stashd._spawnChildProcess(function(err) {
         err.should.be.instanceof(Error);
         done();
       });
@@ -2049,46 +2049,46 @@ describe('Dash Service', function() {
     it('will give error if connecting while shutting down', function(done) {
       var config = {
         node: {
-          network: dashcore.Networks.testnet
+          network: stashcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var dashd = new DashService(config);
-      dashd.node.stopping = true;
-      dashd.startRetryInterval = 100;
-      dashd._loadTipFromNode = sinon.stub();
-      dashd._connectProcess({}, function(err) {
+      var stashd = new StashService(config);
+      stashd.node.stopping = true;
+      stashd.startRetryInterval = 100;
+      stashd._loadTipFromNode = sinon.stub();
+      stashd._connectProcess({}, function(err) {
         err.should.be.instanceof(Error);
         err.message.should.match(/Stopping while trying to connect/);
-        dashd._loadTipFromNode.callCount.should.equal(0);
+        stashd._loadTipFromNode.callCount.should.equal(0);
         done();
       });
     });
     it('will give error from loadTipFromNode after 60 retries', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd._loadTipFromNode = sinon.stub().callsArgWith(1, new Error('test'));
-      dashd.startRetryInterval = 1;
+      var stashd = new StashService(baseConfig);
+      stashd._loadTipFromNode = sinon.stub().callsArgWith(1, new Error('test'));
+      stashd.startRetryInterval = 1;
       var config = {};
-      dashd._connectProcess(config, function(err) {
+      stashd._connectProcess(config, function(err) {
         err.should.be.instanceof(Error);
-        dashd._loadTipFromNode.callCount.should.equal(60);
+        stashd._loadTipFromNode.callCount.should.equal(60);
         done();
       });
     });
     it('will init zmq/rpc on node', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd._initZmqSubSocket = sinon.stub();
-      dashd._subscribeZmqEvents = sinon.stub();
-      dashd._loadTipFromNode = sinon.stub().callsArgWith(1, null);
+      var stashd = new StashService(baseConfig);
+      stashd._initZmqSubSocket = sinon.stub();
+      stashd._subscribeZmqEvents = sinon.stub();
+      stashd._loadTipFromNode = sinon.stub().callsArgWith(1, null);
       var config = {};
-      dashd._connectProcess(config, function(err, node) {
+      stashd._connectProcess(config, function(err, node) {
         should.not.exist(err);
-        dashd._loadTipFromNode.callCount.should.equal(1);
-        dashd._initZmqSubSocket.callCount.should.equal(1);
-        dashd._loadTipFromNode.callCount.should.equal(1);
+        stashd._loadTipFromNode.callCount.should.equal(1);
+        stashd._initZmqSubSocket.callCount.should.equal(1);
+        stashd._loadTipFromNode.callCount.should.equal(1);
         should.exist(node);
         should.exist(node.client);
         done();
@@ -2105,69 +2105,69 @@ describe('Dash Service', function() {
       sandbox.restore();
     });
     it('will give error if "spawn" and "connect" are both not configured', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.options = {};
-      dashd.start(function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd.options = {};
+      stashd.start(function(err) {
         err.should.be.instanceof(Error);
-        err.message.should.match(/Dash configuration options/);
+        err.message.should.match(/Stash configuration options/);
       });
       done();
     });
     it('will give error from spawnChildProcess', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd._spawnChildProcess = sinon.stub().callsArgWith(0, new Error('test'));
-      dashd.options = {
+      var stashd = new StashService(baseConfig);
+      stashd._spawnChildProcess = sinon.stub().callsArgWith(0, new Error('test'));
+      stashd.options = {
         spawn: {}
       };
-      dashd.start(function(err) {
+      stashd.start(function(err) {
         err.should.be.instanceof(Error);
         err.message.should.equal('test');
         done();
       });
     });
     it('will give error from connectProcess', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd._connectProcess = sinon.stub().callsArgWith(1, new Error('test'));
-      dashd.options = {
+      var stashd = new StashService(baseConfig);
+      stashd._connectProcess = sinon.stub().callsArgWith(1, new Error('test'));
+      stashd.options = {
         connect: [
           {}
         ]
       };
-      dashd.start(function(err) {
-        dashd._connectProcess.callCount.should.equal(1);
+      stashd.start(function(err) {
+        stashd._connectProcess.callCount.should.equal(1);
         err.should.be.instanceof(Error);
         err.message.should.equal('test');
         done();
       });
     });
     it('will push node from spawnChildProcess', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var node = {};
-      dashd._initChain = sinon.stub().callsArg(0);
-      dashd._spawnChildProcess = sinon.stub().callsArgWith(0, null, node);
-      dashd.options = {
+      stashd._initChain = sinon.stub().callsArg(0);
+      stashd._spawnChildProcess = sinon.stub().callsArgWith(0, null, node);
+      stashd.options = {
         spawn: {}
       };
-      dashd.start(function(err) {
+      stashd.start(function(err) {
         should.not.exist(err);
-        dashd.nodes.length.should.equal(1);
+        stashd.nodes.length.should.equal(1);
         done();
       });
     });
     it('will push node from connectProcess', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd._initChain = sinon.stub().callsArg(0);
+      var stashd = new StashService(baseConfig);
+      stashd._initChain = sinon.stub().callsArg(0);
       var nodes = [{}];
-      dashd._connectProcess = sinon.stub().callsArgWith(1, null, nodes);
-      dashd.options = {
+      stashd._connectProcess = sinon.stub().callsArgWith(1, null, nodes);
+      stashd.options = {
         connect: [
           {}
         ]
       };
-      dashd.start(function(err) {
+      stashd.start(function(err) {
         should.not.exist(err);
-        dashd._connectProcess.callCount.should.equal(1);
-        dashd.nodes.length.should.equal(1);
+        stashd._connectProcess.callCount.should.equal(1);
+        stashd.nodes.length.should.equal(1);
         done();
       });
     });
@@ -2175,18 +2175,18 @@ describe('Dash Service', function() {
 
   describe('#isSynced', function() {
     it('will give error from syncPercentage', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.syncPercentage = sinon.stub().callsArgWith(0, new Error('test'));
-      dashd.isSynced(function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd.syncPercentage = sinon.stub().callsArgWith(0, new Error('test'));
+      stashd.isSynced(function(err) {
         should.exist(err);
         err.message.should.equal('test');
         done();
       });
     });
     it('will give "true" if percentage is 100.00', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.syncPercentage = sinon.stub().callsArgWith(0, null, 100.00);
-      dashd.isSynced(function(err, synced) {
+      var stashd = new StashService(baseConfig);
+      stashd.syncPercentage = sinon.stub().callsArgWith(0, null, 100.00);
+      stashd.isSynced(function(err, synced) {
         if (err) {
           return done(err);
         }
@@ -2195,9 +2195,9 @@ describe('Dash Service', function() {
       });
     });
     it('will give "true" if percentage is 99.98', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.syncPercentage = sinon.stub().callsArgWith(0, null, 99.98);
-      dashd.isSynced(function(err, synced) {
+      var stashd = new StashService(baseConfig);
+      stashd.syncPercentage = sinon.stub().callsArgWith(0, null, 99.98);
+      stashd.isSynced(function(err, synced) {
         if (err) {
           return done(err);
         }
@@ -2206,9 +2206,9 @@ describe('Dash Service', function() {
       });
     });
     it('will give "false" if percentage is 99.49', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.syncPercentage = sinon.stub().callsArgWith(0, null, 99.49);
-      dashd.isSynced(function(err, synced) {
+      var stashd = new StashService(baseConfig);
+      stashd.syncPercentage = sinon.stub().callsArgWith(0, null, 99.49);
+      stashd.isSynced(function(err, synced) {
         if (err) {
           return done(err);
         }
@@ -2217,9 +2217,9 @@ describe('Dash Service', function() {
       });
     });
     it('will give "false" if percentage is 1', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.syncPercentage = sinon.stub().callsArgWith(0, null, 1);
-      dashd.isSynced(function(err, synced) {
+      var stashd = new StashService(baseConfig);
+      stashd.syncPercentage = sinon.stub().callsArgWith(0, null, 1);
+      stashd.isSynced(function(err, synced) {
         if (err) {
           return done(err);
         }
@@ -2231,32 +2231,32 @@ describe('Dash Service', function() {
 
   describe('#syncPercentage', function() {
     it('will give rpc error', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlockchainInfo = sinon.stub().callsArgWith(0, {message: 'error', code: -1});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockchainInfo: getBlockchainInfo
         }
       });
-      dashd.syncPercentage(function(err) {
+      stashd.syncPercentage(function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will call client getInfo and give result', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlockchainInfo = sinon.stub().callsArgWith(0, null, {
         result: {
           verificationprogress: '0.983821387'
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockchainInfo: getBlockchainInfo
         }
       });
-      dashd.syncPercentage(function(err, percentage) {
+      stashd.syncPercentage(function(err, percentage) {
         if (err) {
           return done(err);
         }
@@ -2268,54 +2268,54 @@ describe('Dash Service', function() {
 
   describe('#_normalizeAddressArg', function() {
     it('will turn single address into array', function() {
-      var dashd = new DashService(baseConfig);
-      var args = dashd._normalizeAddressArg('address');
+      var stashd = new StashService(baseConfig);
+      var args = stashd._normalizeAddressArg('address');
       args.should.deep.equal(['address']);
     });
     it('will keep an array as an array', function() {
-      var dashd = new DashService(baseConfig);
-      var args = dashd._normalizeAddressArg(['address', 'address']);
+      var stashd = new StashService(baseConfig);
+      var args = stashd._normalizeAddressArg(['address', 'address']);
       args.should.deep.equal(['address', 'address']);
     });
   });
 
   describe('#getAddressBalance', function() {
     it('will give rpc error', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getAddressBalance: sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'})
         }
       });
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
       var options = {};
-      dashd.getAddressBalance(address, options, function(err) {
+      stashd.getAddressBalance(address, options, function(err) {
         err.should.be.instanceof(Error);
         done();
       });
     });
     it('will give balance', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getAddressBalance = sinon.stub().callsArgWith(1, null, {
         result: {
           received: 100000,
           balance: 10000
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressBalance: getAddressBalance
         }
       });
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
       var options = {};
-      dashd.getAddressBalance(address, options, function(err, data) {
+      stashd.getAddressBalance(address, options, function(err, data) {
         if (err) {
           return done(err);
         }
         data.balance.should.equal(10000);
         data.received.should.equal(100000);
-        dashd.getAddressBalance(address, options, function(err, data2) {
+        stashd.getAddressBalance(address, options, function(err, data2) {
           if (err) {
             return done(err);
           }
@@ -2330,8 +2330,8 @@ describe('Dash Service', function() {
 
   describe('#getAddressUnspentOutputs', function() {
     it('will give rpc error', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'})
         }
@@ -2340,14 +2340,14 @@ describe('Dash Service', function() {
         queryMempool: false
       };
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressUnspentOutputs(address, options, function(err) {
+      stashd.getAddressUnspentOutputs(address, options, function(err) {
         should.exist(err);
         err.should.be.instanceof(errors.RPCError);
         done();
       });
     });
     it('will give results from client getaddressutxos', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var expectedUtxos = [
         {
           address: 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs',
@@ -2358,7 +2358,7 @@ describe('Dash Service', function() {
           height: 207111
         }
       ];
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, null, {
             result: expectedUtxos
@@ -2369,7 +2369,7 @@ describe('Dash Service', function() {
         queryMempool: false
       };
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      stashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
@@ -2379,7 +2379,7 @@ describe('Dash Service', function() {
       });
     });
     it('will use cache', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var expectedUtxos = [
         {
           address: 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs',
@@ -2393,7 +2393,7 @@ describe('Dash Service', function() {
       var getAddressUtxos = sinon.stub().callsArgWith(1, null, {
         result: expectedUtxos
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressUtxos: getAddressUtxos
         }
@@ -2402,14 +2402,14 @@ describe('Dash Service', function() {
         queryMempool: false
       };
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      stashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
         utxos.length.should.equal(1);
         utxos.should.deep.equal(expectedUtxos);
         getAddressUtxos.callCount.should.equal(1);
-        dashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
+        stashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
           if (err) {
             return done(err);
           }
@@ -2446,7 +2446,7 @@ describe('Dash Service', function() {
           timestamp: 1461342954813
         }
       ];
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var confirmedUtxos = [
         {
           address: 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs',
@@ -2475,7 +2475,7 @@ describe('Dash Service', function() {
           txid: 'f637384e9f81f18767ea50e00bce58fc9848b6588a1130529eebba22a410155f'
         }
       ];
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, null, {
             result: confirmedUtxos
@@ -2489,7 +2489,7 @@ describe('Dash Service', function() {
         queryMempool: true
       };
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      stashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
@@ -2519,7 +2519,7 @@ describe('Dash Service', function() {
           prevout: 2
         }
       ];
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var confirmedUtxos = [
         {
           address: 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs',
@@ -2538,7 +2538,7 @@ describe('Dash Service', function() {
           height: 207111
         }
       ];
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, null, {
             result: confirmedUtxos
@@ -2552,7 +2552,7 @@ describe('Dash Service', function() {
         queryMempool: true
       };
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      stashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
@@ -2598,7 +2598,7 @@ describe('Dash Service', function() {
           timestamp: 1461342833133
         }
       ];
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var confirmedUtxos = [
         {
           address: 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs',
@@ -2625,7 +2625,7 @@ describe('Dash Service', function() {
           height: 207111
         }
       ];
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, null, {
             result: confirmedUtxos
@@ -2639,7 +2639,7 @@ describe('Dash Service', function() {
         queryMempool: true
       };
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      stashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
@@ -2705,9 +2705,9 @@ describe('Dash Service', function() {
           timestamp: 1461342833133
         }
       ];
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var confirmedUtxos = [];
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, null, {
             result: confirmedUtxos
@@ -2721,7 +2721,7 @@ describe('Dash Service', function() {
         queryMempool: true
       };
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      stashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
@@ -2746,7 +2746,7 @@ describe('Dash Service', function() {
           prevout: 1
         }
       ];
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var confirmedUtxos = [
         {
           address: 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs',
@@ -2757,7 +2757,7 @@ describe('Dash Service', function() {
           height: 207111
         }
       ];
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, null, {
             result: confirmedUtxos
@@ -2771,7 +2771,7 @@ describe('Dash Service', function() {
         queryMempool: true
       };
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      stashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
@@ -2789,7 +2789,7 @@ describe('Dash Service', function() {
           timestamp: 1461342707725
         }
       ];
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var confirmedUtxos = [
         {
           address: 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs',
@@ -2800,7 +2800,7 @@ describe('Dash Service', function() {
           height: 207111
         }
       ];
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, null, {
             result: confirmedUtxos
@@ -2814,7 +2814,7 @@ describe('Dash Service', function() {
         queryMempool: true
       };
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      stashd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
@@ -2823,8 +2823,8 @@ describe('Dash Service', function() {
       });
     });
     it('it will handle error from getAddressMempool', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, {code: -1, message: 'test'})
         }
@@ -2833,22 +2833,22 @@ describe('Dash Service', function() {
         queryMempool: true
       };
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressUnspentOutputs(address, options, function(err) {
+      stashd.getAddressUnspentOutputs(address, options, function(err) {
         err.should.be.instanceOf(Error);
         done();
       });
     });
     it('should set query mempool if undefined', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getAddressMempool = sinon.stub().callsArgWith(1, {code: -1, message: 'test'});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressMempool: getAddressMempool
         }
       });
       var options = {};
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressUnspentOutputs(address, options, function(err) {
+      stashd.getAddressUnspentOutputs(address, options, function(err) {
         getAddressMempool.callCount.should.equal(1);
         done();
       });
@@ -2857,7 +2857,7 @@ describe('Dash Service', function() {
 
   describe('#_getBalanceFromMempool', function() {
     it('will sum satoshis', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var deltas = [
         {
           satoshis: -1000,
@@ -2869,14 +2869,14 @@ describe('Dash Service', function() {
           satoshis: -10,
         }
       ];
-      var sum = dashd._getBalanceFromMempool(deltas);
+      var sum = stashd._getBalanceFromMempool(deltas);
       sum.should.equal(990);
     });
   });
 
   describe('#_getTxidsFromMempool', function() {
     it('will filter to txids', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var deltas = [
         {
           txid: 'txid0',
@@ -2888,14 +2888,14 @@ describe('Dash Service', function() {
           txid: 'txid2',
         }
       ];
-      var txids = dashd._getTxidsFromMempool(deltas);
+      var txids = stashd._getTxidsFromMempool(deltas);
       txids.length.should.equal(3);
       txids[0].should.equal('txid0');
       txids[1].should.equal('txid1');
       txids[2].should.equal('txid2');
     });
     it('will not include duplicates', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var deltas = [
         {
           txid: 'txid0',
@@ -2907,7 +2907,7 @@ describe('Dash Service', function() {
           txid: 'txid1',
         }
       ];
-      var txids = dashd._getTxidsFromMempool(deltas);
+      var txids = stashd._getTxidsFromMempool(deltas);
       txids.length.should.equal(2);
       txids[0].should.equal('txid0');
       txids[1].should.equal('txid1');
@@ -2916,64 +2916,64 @@ describe('Dash Service', function() {
 
   describe('#_getHeightRangeQuery', function() {
     it('will detect range query', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var options = {
         start: 20,
         end: 0
       };
-      var rangeQuery = dashd._getHeightRangeQuery(options);
+      var rangeQuery = stashd._getHeightRangeQuery(options);
       rangeQuery.should.equal(true);
     });
     it('will get range properties', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var options = {
         start: 20,
         end: 0
       };
       var clone = {};
-      dashd._getHeightRangeQuery(options, clone);
+      stashd._getHeightRangeQuery(options, clone);
       clone.end.should.equal(20);
       clone.start.should.equal(0);
     });
     it('will throw error with invalid range', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var options = {
         start: 0,
         end: 20
       };
       (function() {
-        dashd._getHeightRangeQuery(options);
+        stashd._getHeightRangeQuery(options);
       }).should.throw('"end" is expected');
     });
   });
 
   describe('#getAddressTxids', function() {
     it('will give error from _getHeightRangeQuery', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd._getHeightRangeQuery = sinon.stub().throws(new Error('test'));
-      dashd.getAddressTxids('address', {}, function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd._getHeightRangeQuery = sinon.stub().throws(new Error('test'));
+      stashd.getAddressTxids('address', {}, function(err) {
         err.should.be.instanceOf(Error);
         err.message.should.equal('test');
         done();
       });
     });
     it('will give rpc error from mempool query', function() {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'})
         }
       });
       var options = {};
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressTxids(address, options, function(err) {
+      stashd.getAddressTxids(address, options, function(err) {
         should.exist(err);
         err.should.be.instanceof(errors.RPCError);
       });
     });
     it('will give rpc error from txids query', function() {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getAddressTxids: sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'})
         }
@@ -2982,7 +2982,7 @@ describe('Dash Service', function() {
         queryMempool: false
       };
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressTxids(address, options, function(err) {
+      stashd.getAddressTxids(address, options, function(err) {
         should.exist(err);
         err.should.be.instanceof(errors.RPCError);
       });
@@ -3000,8 +3000,8 @@ describe('Dash Service', function() {
         'ed11a08e3102f9610bda44c80c46781d97936a4290691d87244b1b345b39a693',
         'ec94d845c603f292a93b7c829811ac624b76e52b351617ca5a758e9d61a11681'
       ];
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getAddressTxids: sinon.stub().callsArgWith(1, null, {
             result: expectedTxids.reverse()
@@ -3012,7 +3012,7 @@ describe('Dash Service', function() {
         queryMempool: false
       };
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressTxids(address, options, function(err, txids) {
+      stashd.getAddressTxids(address, options, function(err, txids) {
         if (err) {
           return done(err);
         }
@@ -3025,11 +3025,11 @@ describe('Dash Service', function() {
       var expectedTxids = [
         'e9dcf22807db77ac0276b03cc2d3a8b03c4837db8ac6650501ef45af1c807cce'
       ];
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getAddressTxids = sinon.stub().callsArgWith(1, null, {
         result: expectedTxids.reverse()
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressTxids: getAddressTxids
         }
@@ -3038,14 +3038,14 @@ describe('Dash Service', function() {
         queryMempool: false
       };
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressTxids(address, options, function(err, txids) {
+      stashd.getAddressTxids(address, options, function(err, txids) {
         if (err) {
           return done(err);
         }
         getAddressTxids.callCount.should.equal(1);
         txids.should.deep.equal(expectedTxids);
 
-        dashd.getAddressTxids(address, options, function(err, txids) {
+        stashd.getAddressTxids(address, options, function(err, txids) {
           if (err) {
             return done(err);
           }
@@ -3059,12 +3059,12 @@ describe('Dash Service', function() {
       var expectedTxids = [
         'e9dcf22807db77ac0276b03cc2d3a8b03c4837db8ac6650501ef45af1c807cce'
       ];
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getAddressMempool = sinon.stub();
       var getAddressTxids = sinon.stub().callsArgWith(1, null, {
         result: expectedTxids.reverse()
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressTxids: getAddressTxids,
           getAddressMempool: getAddressMempool
@@ -3076,7 +3076,7 @@ describe('Dash Service', function() {
         end: 2
       };
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressTxids(address, options, function(err, txids) {
+      stashd.getAddressTxids(address, options, function(err, txids) {
         if (err) {
           return done(err);
         }
@@ -3084,7 +3084,7 @@ describe('Dash Service', function() {
         getAddressMempool.callCount.should.equal(0);
         txids.should.deep.equal(expectedTxids);
 
-        dashd.getAddressTxids(address, options, function(err, txids) {
+        stashd.getAddressTxids(address, options, function(err, txids) {
           if (err) {
             return done(err);
           }
@@ -3099,7 +3099,7 @@ describe('Dash Service', function() {
       var expectedTxids = [
         'e9dcf22807db77ac0276b03cc2d3a8b03c4837db8ac6650501ef45af1c807cce'
       ];
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getAddressTxids = sinon.stub().callsArgWith(1, null, {
         result: expectedTxids.reverse()
       });
@@ -3116,21 +3116,21 @@ describe('Dash Service', function() {
           }
         ]
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressTxids: getAddressTxids,
           getAddressMempool: getAddressMempool
         }
       });
       var address = 'XnQuJpAgEDNtRwoXWLfuEs69cMgCYS8rgs';
-      dashd.getAddressTxids(address, {queryMempool: false}, function(err, txids) {
+      stashd.getAddressTxids(address, {queryMempool: false}, function(err, txids) {
         if (err) {
           return done(err);
         }
         getAddressTxids.callCount.should.equal(1);
         txids.should.deep.equal(expectedTxids);
 
-        dashd.getAddressTxids(address, {queryMempool: true}, function(err, txids) {
+        stashd.getAddressTxids(address, {queryMempool: true}, function(err, txids) {
           if (err) {
             return done(err);
           }
@@ -3158,69 +3158,69 @@ describe('Dash Service', function() {
     it('should get 0 confirmation', function() {
       var tx = new Transaction(txhex);
       tx.height = -1;
-      var dashd = new DashService(baseConfig);
-      dashd.height = 10;
-      var confirmations = dashd._getConfirmationsDetail(tx);
+      var stashd = new StashService(baseConfig);
+      stashd.height = 10;
+      var confirmations = stashd._getConfirmationsDetail(tx);
       confirmations.should.equal(0);
     });
     it('should get 1 confirmation', function() {
       var tx = new Transaction(txhex);
       tx.height = 10;
-      var dashd = new DashService(baseConfig);
-      dashd.height = 10;
-      var confirmations = dashd._getConfirmationsDetail(tx);
+      var stashd = new StashService(baseConfig);
+      stashd.height = 10;
+      var confirmations = stashd._getConfirmationsDetail(tx);
       confirmations.should.equal(1);
     });
     it('should get 2 confirmation', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var tx = new Transaction(txhex);
-      dashd.height = 11;
+      stashd.height = 11;
       tx.height = 10;
-      var confirmations = dashd._getConfirmationsDetail(tx);
+      var confirmations = stashd._getConfirmationsDetail(tx);
       confirmations.should.equal(2);
     });
     it('should get 0 confirmation with overflow', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var tx = new Transaction(txhex);
-      dashd.height = 3;
+      stashd.height = 3;
       tx.height = 10;
-      var confirmations = dashd._getConfirmationsDetail(tx);
+      var confirmations = stashd._getConfirmationsDetail(tx);
       log.warn.callCount.should.equal(1);
       confirmations.should.equal(0);
     });
     it('should get 1000 confirmation', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var tx = new Transaction(txhex);
-      dashd.height = 1000;
+      stashd.height = 1000;
       tx.height = 1;
-      var confirmations = dashd._getConfirmationsDetail(tx);
+      var confirmations = stashd._getConfirmationsDetail(tx);
       confirmations.should.equal(1000);
     });
   });
 
   describe('#_getAddressDetailsForInput', function() {
     it('will return if missing an address', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var result = {};
-      dashd._getAddressDetailsForInput({}, 0, result, []);
+      stashd._getAddressDetailsForInput({}, 0, result, []);
       should.not.exist(result.addresses);
       should.not.exist(result.satoshis);
     });
     it('will only add address if it matches', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var result = {};
-      dashd._getAddressDetailsForInput({
+      stashd._getAddressDetailsForInput({
         address: 'address1'
       }, 0, result, ['address2']);
       should.not.exist(result.addresses);
       should.not.exist(result.satoshis);
     });
     it('will instantiate if outputIndexes not defined', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var result = {
         addresses: {}
       };
-      dashd._getAddressDetailsForInput({
+      stashd._getAddressDetailsForInput({
         address: 'address1'
       }, 0, result, ['address1']);
       should.exist(result.addresses);
@@ -3228,7 +3228,7 @@ describe('Dash Service', function() {
       result.addresses['address1'].outputIndexes.should.deep.equal([]);
     });
     it('will push to inputIndexes', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var result = {
         addresses: {
           'address1': {
@@ -3236,7 +3236,7 @@ describe('Dash Service', function() {
           }
         }
       };
-      dashd._getAddressDetailsForInput({
+      stashd._getAddressDetailsForInput({
         address: 'address1'
       }, 2, result, ['address1']);
       should.exist(result.addresses);
@@ -3246,27 +3246,27 @@ describe('Dash Service', function() {
 
   describe('#_getAddressDetailsForOutput', function() {
     it('will return if missing an address', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var result = {};
-      dashd._getAddressDetailsForOutput({}, 0, result, []);
+      stashd._getAddressDetailsForOutput({}, 0, result, []);
       should.not.exist(result.addresses);
       should.not.exist(result.satoshis);
     });
     it('will only add address if it matches', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var result = {};
-      dashd._getAddressDetailsForOutput({
+      stashd._getAddressDetailsForOutput({
         address: 'address1'
       }, 0, result, ['address2']);
       should.not.exist(result.addresses);
       should.not.exist(result.satoshis);
     });
     it('will instantiate if outputIndexes not defined', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var result = {
         addresses: {}
       };
-      dashd._getAddressDetailsForOutput({
+      stashd._getAddressDetailsForOutput({
         address: 'address1'
       }, 0, result, ['address1']);
       should.exist(result.addresses);
@@ -3274,7 +3274,7 @@ describe('Dash Service', function() {
       result.addresses['address1'].outputIndexes.should.deep.equal([0]);
     });
     it('will push if outputIndexes defined', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var result = {
         addresses: {
           'address1': {
@@ -3282,7 +3282,7 @@ describe('Dash Service', function() {
           }
         }
       };
-      dashd._getAddressDetailsForOutput({
+      stashd._getAddressDetailsForOutput({
         address: 'address1'
       }, 1, result, ['address1']);
       should.exist(result.addresses);
@@ -3324,9 +3324,9 @@ describe('Dash Service', function() {
         ],
         locktime: 0
       };
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var addresses = ['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW'];
-      var details = dashd._getAddressDetailsForTransaction(tx, addresses);
+      var details = stashd._getAddressDetailsForTransaction(tx, addresses);
       should.exist(details.addresses['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW']);
       details.addresses['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW'].inputIndexes.should.deep.equal([0]);
       details.addresses['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW'].outputIndexes.should.deep.equal([
@@ -3343,15 +3343,15 @@ describe('Dash Service', function() {
       var tx = {
         height: 20,
       };
-      var dashd = new DashService(baseConfig);
-      dashd.getDetailedTransaction = sinon.stub().callsArgWith(1, null, tx);
-      dashd.height = 300;
+      var stashd = new StashService(baseConfig);
+      stashd.getDetailedTransaction = sinon.stub().callsArgWith(1, null, tx);
+      stashd.height = 300;
       var addresses = {};
-      dashd._getAddressDetailsForTransaction = sinon.stub().returns({
+      stashd._getAddressDetailsForTransaction = sinon.stub().returns({
         addresses: addresses,
         satoshis: 1000,
       });
-      dashd._getAddressDetailedTransaction(txid, {}, function(err, details) {
+      stashd._getAddressDetailedTransaction(txid, {}, function(err, details) {
         if (err) {
           return done(err);
         }
@@ -3364,9 +3364,9 @@ describe('Dash Service', function() {
     });
     it('give error from getDetailedTransaction', function(done) {
       var txid = '46f24e0c274fc07708b781963576c4c5d5625d926dbb0a17fa865dcd9fe58ea0';
-      var dashd = new DashService(baseConfig);
-      dashd.getDetailedTransaction = sinon.stub().callsArgWith(1, new Error('test'));
-      dashd._getAddressDetailedTransaction(txid, {}, function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd.getDetailedTransaction = sinon.stub().callsArgWith(1, new Error('test'));
+      stashd._getAddressDetailedTransaction(txid, {}, function(err) {
         err.should.be.instanceof(Error);
         done();
       });
@@ -3374,13 +3374,13 @@ describe('Dash Service', function() {
   });
 
   describe('#_getAddressStrings', function() {
-    it('will get address strings from dashcore addresses', function() {
+    it('will get address strings from stashcore addresses', function() {
       var addresses = [
-        dashcore.Address('XjxDQFjTNEP9dcrJhBLvy5i1Dobz4x1LJN'),
-        dashcore.Address('7d5169eBcGHF4BYC6DTffTyeCpWbrZnNgz'),
+        stashcore.Address('XjxDQFjTNEP9dcrJhBLvy5i1Dobz4x1LJN'),
+        stashcore.Address('7d5169eBcGHF4BYC6DTffTyeCpWbrZnNgz'),
       ];
-      var dashd = new DashService(baseConfig);
-      var strings = dashd._getAddressStrings(addresses);
+      var stashd = new StashService(baseConfig);
+      var strings = stashd._getAddressStrings(addresses);
       strings[0].should.equal('XjxDQFjTNEP9dcrJhBLvy5i1Dobz4x1LJN');
       strings[1].should.equal('7d5169eBcGHF4BYC6DTffTyeCpWbrZnNgz');
     });
@@ -3389,63 +3389,63 @@ describe('Dash Service', function() {
         'XjxDQFjTNEP9dcrJhBLvy5i1Dobz4x1LJN',
         '7d5169eBcGHF4BYC6DTffTyeCpWbrZnNgz',
       ];
-      var dashd = new DashService(baseConfig);
-      var strings = dashd._getAddressStrings(addresses);
+      var stashd = new StashService(baseConfig);
+      var strings = stashd._getAddressStrings(addresses);
       strings[0].should.equal('XjxDQFjTNEP9dcrJhBLvy5i1Dobz4x1LJN');
       strings[1].should.equal('7d5169eBcGHF4BYC6DTffTyeCpWbrZnNgz');
     });
     it('will get address strings from mixture of types', function() {
       var addresses = [
-        dashcore.Address('XjxDQFjTNEP9dcrJhBLvy5i1Dobz4x1LJN'),
+        stashcore.Address('XjxDQFjTNEP9dcrJhBLvy5i1Dobz4x1LJN'),
         '7d5169eBcGHF4BYC6DTffTyeCpWbrZnNgz',
       ];
-      var dashd = new DashService(baseConfig);
-      var strings = dashd._getAddressStrings(addresses);
+      var stashd = new StashService(baseConfig);
+      var strings = stashd._getAddressStrings(addresses);
       strings[0].should.equal('XjxDQFjTNEP9dcrJhBLvy5i1Dobz4x1LJN');
       strings[1].should.equal('7d5169eBcGHF4BYC6DTffTyeCpWbrZnNgz');
     });
     it('will give error with unknown', function() {
       var addresses = [
-        dashcore.Address('XjxDQFjTNEP9dcrJhBLvy5i1Dobz4x1LJN'),
+        stashcore.Address('XjxDQFjTNEP9dcrJhBLvy5i1Dobz4x1LJN'),
         0,
       ];
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       (function() {
-        dashd._getAddressStrings(addresses);
+        stashd._getAddressStrings(addresses);
       }).should.throw(TypeError);
     });
   });
 
   describe('#_paginateTxids', function() {
     it('slice txids based on "from" and "to" (3 to 13)', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      var paginated = dashd._paginateTxids(txids, 3, 13);
+      var paginated = stashd._paginateTxids(txids, 3, 13);
       paginated.should.deep.equal([3, 4, 5, 6, 7, 8, 9, 10]);
     });
     it('slice txids based on "from" and "to" (0 to 3)', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      var paginated = dashd._paginateTxids(txids, 0, 3);
+      var paginated = stashd._paginateTxids(txids, 0, 3);
       paginated.should.deep.equal([0, 1, 2]);
     });
     it('slice txids based on "from" and "to" (0 to 1)', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      var paginated = dashd._paginateTxids(txids, 0, 1);
+      var paginated = stashd._paginateTxids(txids, 0, 1);
       paginated.should.deep.equal([0]);
     });
     it('will throw error if "from" is greater than "to"', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
       (function() {
-        dashd._paginateTxids(txids, 1, 0);
+        stashd._paginateTxids(txids, 1, 0);
       }).should.throw('"from" (1) is expected to be less than "to"');
     });
     it('will handle string numbers', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      var paginated = dashd._paginateTxids(txids, '1', '3');
+      var paginated = stashd._paginateTxids(txids, '1', '3');
       paginated.should.deep.equal([1, 2]);
     });
   });
@@ -3453,27 +3453,27 @@ describe('Dash Service', function() {
   describe('#getAddressHistory', function() {
     var address = 'XcHw3hNN293dY1AYrbeBrP1sB6vsugTQTz';
     it('will give error with "from" and "to" range that exceeds max size', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.getAddressHistory(address, {from: 0, to: 51}, function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd.getAddressHistory(address, {from: 0, to: 51}, function(err) {
         should.exist(err);
         err.message.match(/^\"from/);
         done();
       });
     });
     it('will give error with "from" and "to" order is reversed', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.getAddressTxids = sinon.stub().callsArgWith(2, null, []);
-      dashd.getAddressHistory(address, {from: 51, to: 0}, function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd.getAddressTxids = sinon.stub().callsArgWith(2, null, []);
+      stashd.getAddressHistory(address, {from: 51, to: 0}, function(err) {
         should.exist(err);
         err.message.match(/^\"from/);
         done();
       });
     });
     it('will give error from _getAddressDetailedTransaction', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.getAddressTxids = sinon.stub().callsArgWith(2, null, ['txid']);
-      dashd._getAddressDetailedTransaction = sinon.stub().callsArgWith(2, new Error('test'));
-      dashd.getAddressHistory(address, {}, function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd.getAddressTxids = sinon.stub().callsArgWith(2, null, ['txid']);
+      stashd._getAddressDetailedTransaction = sinon.stub().callsArgWith(2, new Error('test'));
+      stashd.getAddressHistory(address, {}, function(err) {
         should.exist(err);
         err.message.should.equal('test');
         done();
@@ -3484,18 +3484,18 @@ describe('Dash Service', function() {
       for (var i = 0; i < 101; i++) {
         addresses.push(address);
       }
-      var dashd = new DashService(baseConfig);
-      dashd.maxAddressesQuery = 100;
-      dashd.getAddressHistory(addresses, {}, function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd.maxAddressesQuery = 100;
+      stashd.getAddressHistory(addresses, {}, function(err) {
         should.exist(err);
         err.message.match(/Maximum/);
         done();
       });
     });
     it('give error from getAddressTxids', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.getAddressTxids = sinon.stub().callsArgWith(2, new Error('test'));
-      dashd.getAddressHistory('address', {}, function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd.getAddressTxids = sinon.stub().callsArgWith(2, new Error('test'));
+      stashd.getAddressHistory('address', {}, function(err) {
         should.exist(err);
         err.should.be.instanceof(Error);
         err.message.should.equal('test');
@@ -3503,13 +3503,13 @@ describe('Dash Service', function() {
       });
     });
     it('will paginate', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd._getAddressDetailedTransaction = function(txid, options, callback) {
+      var stashd = new StashService(baseConfig);
+      stashd._getAddressDetailedTransaction = function(txid, options, callback) {
         callback(null, txid);
       };
       var txids = ['one', 'two', 'three', 'four'];
-      dashd.getAddressTxids = sinon.stub().callsArgWith(2, null, txids);
-      dashd.getAddressHistory('address', {from: 1, to: 3}, function(err, data) {
+      stashd.getAddressTxids = sinon.stub().callsArgWith(2, null, txids);
+      stashd.getAddressHistory('address', {from: 1, to: 3}, function(err, data) {
         if (err) {
           return done(err);
         }
@@ -3527,8 +3527,8 @@ describe('Dash Service', function() {
     var memtxid1 = 'b1bfa8dbbde790cb46b9763ef3407c1a21c8264b67bfe224f462ec0e1f569e92';
     var memtxid2 = 'e9dcf22807db77ac0276b03cc2d3a8b03c4837db8ac6650501ef45af1c807cce';
     it('will handle error from getAddressTxids', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, null, {
             result: [
@@ -3539,11 +3539,11 @@ describe('Dash Service', function() {
           })
         }
       });
-      dashd.getAddressTxids = sinon.stub().callsArgWith(2, new Error('test'));
-      dashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {});
+      stashd.getAddressTxids = sinon.stub().callsArgWith(2, new Error('test'));
+      stashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {});
       var address = '';
       var options = {};
-      dashd.getAddressSummary(address, options, function(err) {
+      stashd.getAddressSummary(address, options, function(err) {
         should.exist(err);
         err.should.be.instanceof(Error);
         err.message.should.equal('test');
@@ -3551,8 +3551,8 @@ describe('Dash Service', function() {
       });
     });
     it('will handle error from getAddressBalance', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, null, {
             result: [
@@ -3563,11 +3563,11 @@ describe('Dash Service', function() {
           })
         }
       });
-      dashd.getAddressTxids = sinon.stub().callsArgWith(2, null, {});
-      dashd.getAddressBalance = sinon.stub().callsArgWith(2, new Error('test'), {});
+      stashd.getAddressTxids = sinon.stub().callsArgWith(2, null, {});
+      stashd.getAddressBalance = sinon.stub().callsArgWith(2, new Error('test'), {});
       var address = '';
       var options = {};
-      dashd.getAddressSummary(address, options, function(err) {
+      stashd.getAddressSummary(address, options, function(err) {
         should.exist(err);
         err.should.be.instanceof(Error);
         err.message.should.equal('test');
@@ -3575,17 +3575,17 @@ describe('Dash Service', function() {
       });
     });
     it('will handle error from client getAddressMempool', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'})
         }
       });
-      dashd.getAddressTxids = sinon.stub().callsArgWith(2, null, {});
-      dashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {});
+      stashd.getAddressTxids = sinon.stub().callsArgWith(2, null, {});
+      stashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {});
       var address = '';
       var options = {};
-      dashd.getAddressSummary(address, options, function(err) {
+      stashd.getAddressSummary(address, options, function(err) {
         should.exist(err);
         err.should.be.instanceof(Error);
         err.message.should.equal('Test error');
@@ -3593,8 +3593,8 @@ describe('Dash Service', function() {
       });
     });
     it('should set all properties', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, null, {
             result: [
@@ -3610,18 +3610,18 @@ describe('Dash Service', function() {
           })
         }
       });
-      sinon.spy(dashd, '_paginateTxids');
-      dashd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
-      dashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
+      sinon.spy(stashd, '_paginateTxids');
+      stashd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
+      stashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
         received: 30 * 1e8,
         balance: 20 * 1e8
       });
       var address = '7oK6xjGeVK5YCT5dpqzNXGUag1bQadPAyT';
       var options = {};
-      dashd.getAddressSummary(address, options, function(err, summary) {
-        dashd._paginateTxids.callCount.should.equal(1);
-        dashd._paginateTxids.args[0][1].should.equal(0);
-        dashd._paginateTxids.args[0][2].should.equal(1000);
+      stashd.getAddressSummary(address, options, function(err, summary) {
+        stashd._paginateTxids.callCount.should.equal(1);
+        stashd._paginateTxids.args[0][1].should.equal(0);
+        stashd._paginateTxids.args[0][2].should.equal(1000);
         summary.appearances.should.equal(3);
         summary.totalReceived.should.equal(3000000000);
         summary.totalSpent.should.equal(1000000000);
@@ -3639,8 +3639,8 @@ describe('Dash Service', function() {
       });
     });
     it('will give error with "from" and "to" range that exceeds max size', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, null, {
             result: [
@@ -3656,8 +3656,8 @@ describe('Dash Service', function() {
           })
         }
       });
-      dashd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
-      dashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
+      stashd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
+      stashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
         received: 30 * 1e8,
         balance: 20 * 1e8
       });
@@ -3666,15 +3666,15 @@ describe('Dash Service', function() {
         from: 0,
         to: 1001
       };
-      dashd.getAddressSummary(address, options, function(err) {
+      stashd.getAddressSummary(address, options, function(err) {
         should.exist(err);
         err.message.match(/^\"from/);
         done();
       });
     });
     it('will get from cache with noTxList', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, null, {
             result: [
@@ -3690,8 +3690,8 @@ describe('Dash Service', function() {
           })
         }
       });
-      dashd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
-      dashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
+      stashd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
+      stashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
         received: 30 * 1e8,
         balance: 20 * 1e8
       });
@@ -3708,29 +3708,29 @@ describe('Dash Service', function() {
         summary.unconfirmedBalance.should.equal(-900001);
         should.not.exist(summary.txids);
       }
-      dashd.getAddressSummary(address, options, function(err, summary) {
+      stashd.getAddressSummary(address, options, function(err, summary) {
         checkSummary(summary);
-        dashd.getAddressTxids.callCount.should.equal(1);
-        dashd.getAddressBalance.callCount.should.equal(1);
-        dashd.getAddressSummary(address, options, function(err, summary) {
+        stashd.getAddressTxids.callCount.should.equal(1);
+        stashd.getAddressBalance.callCount.should.equal(1);
+        stashd.getAddressSummary(address, options, function(err, summary) {
           checkSummary(summary);
-          dashd.getAddressTxids.callCount.should.equal(1);
-          dashd.getAddressBalance.callCount.should.equal(1);
+          stashd.getAddressTxids.callCount.should.equal(1);
+          stashd.getAddressBalance.callCount.should.equal(1);
           done();
         });
       });
     });
     it('will skip querying the mempool with queryMempool set to false', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getAddressMempool = sinon.stub();
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressMempool: getAddressMempool
         }
       });
-      sinon.spy(dashd, '_paginateTxids');
-      dashd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
-      dashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
+      sinon.spy(stashd, '_paginateTxids');
+      stashd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
+      stashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
         received: 30 * 1e8,
         balance: 20 * 1e8
       });
@@ -3738,31 +3738,31 @@ describe('Dash Service', function() {
       var options = {
         queryMempool: false
       };
-      dashd.getAddressSummary(address, options, function() {
+      stashd.getAddressSummary(address, options, function() {
         getAddressMempool.callCount.should.equal(0);
         done();
       });
     });
     it('will give error from _paginateTxids', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getAddressMempool = sinon.stub();
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getAddressMempool: getAddressMempool
         }
       });
-      sinon.spy(dashd, '_paginateTxids');
-      dashd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
-      dashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
+      sinon.spy(stashd, '_paginateTxids');
+      stashd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
+      stashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
         received: 30 * 1e8,
         balance: 20 * 1e8
       });
-      dashd._paginateTxids = sinon.stub().throws(new Error('test'));
+      stashd._paginateTxids = sinon.stub().throws(new Error('test'));
       var address = '7oK6xjGeVK5YCT5dpqzNXGUag1bQadPAyT';
       var options = {
         queryMempool: false
       };
-      dashd.getAddressSummary(address, options, function(err) {
+      stashd.getAddressSummary(address, options, function(err) {
         err.should.be.instanceOf(Error);
         err.message.should.equal('test');
         done();
@@ -3774,46 +3774,46 @@ describe('Dash Service', function() {
     var blockhash = '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b';
     var blockhex = '0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c0101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000';
     it('will give rcp error from client getblockhash', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getBlockHash: sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'})
         }
       });
-      dashd.getRawBlock(10, function(err) {
+      stashd.getRawBlock(10, function(err) {
         should.exist(err);
         err.should.be.instanceof(errors.RPCError);
         done();
       });
     });
     it('will give rcp error from client getblock', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getBlock: sinon.stub().callsArgWith(2, {code: -1, message: 'Test error'})
         }
       });
-      dashd.getRawBlock(blockhash, function(err) {
+      stashd.getRawBlock(blockhash, function(err) {
         should.exist(err);
         err.should.be.instanceof(errors.RPCError);
         done();
       });
     });
     it('will try all nodes for getblock', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlockWithError = sinon.stub().callsArgWith(2, {code: -1, message: 'Test error'});
-      dashd.tryAllInterval = 1;
-      dashd.nodes.push({
+      stashd.tryAllInterval = 1;
+      stashd.nodes.push({
         client: {
           getBlock: getBlockWithError
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlock: getBlockWithError
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlock: sinon.stub().callsArgWith(2, null, {
             result: blockhex
@@ -3821,8 +3821,8 @@ describe('Dash Service', function() {
         }
       });
       //cause first call will be not getBlock, but _maybeGetBlockHash, which will set up nodesIndex to 0
-      dashd.nodesIndex = 2;
-      dashd.getRawBlock(blockhash, function(err, buffer) {
+      stashd.nodesIndex = 2;
+      stashd.getRawBlock(blockhash, function(err, buffer) {
         if (err) {
           return done(err);
         }
@@ -3832,22 +3832,22 @@ describe('Dash Service', function() {
       });
     });
     it('will get block from cache', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, null, {
         result: blockhex
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlock: getBlock
         }
       });
-      dashd.getRawBlock(blockhash, function(err, buffer) {
+      stashd.getRawBlock(blockhash, function(err, buffer) {
         if (err) {
           return done(err);
         }
         buffer.should.be.instanceof(Buffer);
         getBlock.callCount.should.equal(1);
-        dashd.getRawBlock(blockhash, function(err, buffer) {
+        stashd.getRawBlock(blockhash, function(err, buffer) {
           if (err) {
             return done(err);
           }
@@ -3858,20 +3858,20 @@ describe('Dash Service', function() {
       });
     });
     it('will get block by height', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, null, {
         result: blockhex
       });
       var getBlockHash = sinon.stub().callsArgWith(1, null, {
         result: '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f'
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
-      dashd.getRawBlock(0, function(err, buffer) {
+      stashd.getRawBlock(0, function(err, buffer) {
         if (err) {
           return done(err);
         }
@@ -3886,128 +3886,128 @@ describe('Dash Service', function() {
   describe('#getBlock', function() {
     var blockhex = '0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c0101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000';
     it('will give an rpc error from client getblock', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, {code: -1, message: 'Test error'});
       var getBlockHash = sinon.stub().callsArgWith(1, null, {});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
-      dashd.getBlock(0, function(err) {
+      stashd.getBlock(0, function(err) {
         err.should.be.instanceof(Error);
         done();
       });
     });
     it('will give an rpc error from client getblockhash', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlockHash = sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      dashd.getBlock(0, function(err) {
+      stashd.getBlock(0, function(err) {
         err.should.be.instanceof(Error);
         done();
       });
     });
-    it('will getblock as dashcore object from height', function(done) {
-      var dashd = new DashService(baseConfig);
+    it('will getblock as stashcore object from height', function(done) {
+      var stashd = new StashService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, null, {
         result: blockhex
       });
       var getBlockHash = sinon.stub().callsArgWith(1, null, {
         result: '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b'
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
-      dashd.getBlock(0, function(err, block) {
+      stashd.getBlock(0, function(err, block) {
         should.not.exist(err);
         getBlock.args[0][0].should.equal('00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b');
         getBlock.args[0][1].should.equal(false);
-        block.should.be.instanceof(dashcore.Block);
+        block.should.be.instanceof(stashcore.Block);
         done();
       });
     });
-    it('will getblock as dashcore object', function(done) {
-      var dashd = new DashService(baseConfig);
+    it('will getblock as stashcore object', function(done) {
+      var stashd = new StashService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, null, {
         result: blockhex
       });
       var getBlockHash = sinon.stub();
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
-      dashd.getBlock('00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b', function(err, block) {
+      stashd.getBlock('00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b', function(err, block) {
         should.not.exist(err);
         getBlockHash.callCount.should.equal(0);
         getBlock.callCount.should.equal(1);
         getBlock.args[0][0].should.equal('00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b');
         getBlock.args[0][1].should.equal(false);
-        block.should.be.instanceof(dashcore.Block);
+        block.should.be.instanceof(stashcore.Block);
         done();
       });
     });
     it('will get block from cache', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, null, {
         result: blockhex
       });
       var getBlockHash = sinon.stub();
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
       var hash = '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b';
-      dashd.getBlock(hash, function(err, block) {
+      stashd.getBlock(hash, function(err, block) {
         should.not.exist(err);
         getBlockHash.callCount.should.equal(0);
         getBlock.callCount.should.equal(1);
-        block.should.be.instanceof(dashcore.Block);
-        dashd.getBlock(hash, function(err, block) {
+        block.should.be.instanceof(stashcore.Block);
+        stashd.getBlock(hash, function(err, block) {
           should.not.exist(err);
           getBlockHash.callCount.should.equal(0);
           getBlock.callCount.should.equal(1);
-          block.should.be.instanceof(dashcore.Block);
+          block.should.be.instanceof(stashcore.Block);
           done();
         });
       });
     });
     it('will get block from cache with height (but not height)', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, null, {
         result: blockhex
       });
       var getBlockHash = sinon.stub().callsArgWith(1, null, {
         result: '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b'
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
-      dashd.getBlock(0, function(err, block) {
+      stashd.getBlock(0, function(err, block) {
         should.not.exist(err);
         getBlockHash.callCount.should.equal(1);
         getBlock.callCount.should.equal(1);
-        block.should.be.instanceof(dashcore.Block);
-        dashd.getBlock(0, function(err, block) {
+        block.should.be.instanceof(stashcore.Block);
+        stashd.getBlock(0, function(err, block) {
           should.not.exist(err);
           getBlockHash.callCount.should.equal(2);
           getBlock.callCount.should.equal(1);
-          block.should.be.instanceof(dashcore.Block);
+          block.should.be.instanceof(stashcore.Block);
           done();
         });
       });
@@ -4016,32 +4016,32 @@ describe('Dash Service', function() {
 
   describe('#getBlockHashesByTimestamp', function() {
     it('should give an rpc error', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlockHashes = sinon.stub().callsArgWith(2, {message: 'error', code: -1});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockHashes: getBlockHashes
         }
       });
-      dashd.getBlockHashesByTimestamp(1441911000, 1441914000, function(err, hashes) {
+      stashd.getBlockHashesByTimestamp(1441911000, 1441914000, function(err, hashes) {
         should.exist(err);
         err.message.should.equal('error');
         done();
       });
     });
     it('should get the correct block hashes', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var block1 = '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b';
       var block2 = '000000000383752a55a0b2891ce018fd0fdc0b6352502772b034ec282b4a1bf6';
       var getBlockHashes = sinon.stub().callsArgWith(2, null, {
         result: [block2, block1]
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockHashes: getBlockHashes
         }
       });
-      dashd.getBlockHashesByTimestamp(1441914000, 1441911000, function(err, hashes) {
+      stashd.getBlockHashesByTimestamp(1441914000, 1441911000, function(err, hashes) {
         should.not.exist(err);
         hashes.should.deep.equal([block2, block1]);
         done();
@@ -4052,45 +4052,45 @@ describe('Dash Service', function() {
   describe('#getBlockHeader', function() {
     var blockhash = '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b';
     it('will give error from getBlockHash', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlockHash = sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      dashd.getBlockHeader(10, function(err) {
+      stashd.getBlockHeader(10, function(err) {
         err.should.be.instanceof(Error);
       });
     });
     it('it will give rpc error from client getblockheader', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlockHeader = sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockHeader: getBlockHeader
         }
       });
-      dashd.getBlockHeader(blockhash, function(err) {
+      stashd.getBlockHeader(blockhash, function(err) {
         err.should.be.instanceof(Error);
       });
     });
     it('it will give rpc error from client getblockhash', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlockHeader = sinon.stub();
       var getBlockHash = sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockHeader: getBlockHeader,
           getBlockHash: getBlockHash
         }
       });
-      dashd.getBlockHeader(0, function(err) {
+      stashd.getBlockHeader(0, function(err) {
         err.should.be.instanceof(Error);
       });
     });
     it('will give result from client getblockheader (from height)', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var result = {
         hash: '0000000000000a817cd3a74aec2f2246b59eb2cbb1ad730213e6c4a1d68ec2f6',
         version: 536870912,
@@ -4126,20 +4126,20 @@ describe('Dash Service', function() {
       var getBlockHash = sinon.stub().callsArgWith(1, null, {
         result: blockhash
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockHeader: getBlockHeader,
           getBlockHash: getBlockHash
         }
       });
-      dashd.getBlockHeader(0, function(err, blockHeader) {
+      stashd.getBlockHeader(0, function(err, blockHeader) {
         should.not.exist(err);
         getBlockHeader.args[0][0].should.equal(blockhash);
         blockHeader.should.deep.equal(result);
       });
     });
     it('will give result from client getblockheader (from hash)', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var result = {
         hash: '0000000000000a817cd3a74aec2f2246b59eb2cbb1ad730213e6c4a1d68ec2f6',
         version: 536870912,
@@ -4173,13 +4173,13 @@ describe('Dash Service', function() {
         }
       });
       var getBlockHash = sinon.stub();
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockHeader: getBlockHeader,
           getBlockHash: getBlockHash
         }
       });
-      dashd.getBlockHeader(blockhash, function(err, blockHeader) {
+      stashd.getBlockHeader(blockhash, function(err, blockHeader) {
         should.not.exist(err);
         getBlockHash.callCount.should.equal(0);
         blockHeader.should.deep.equal(result);
@@ -4190,31 +4190,31 @@ describe('Dash Service', function() {
   describe('#getBlockHeaders', function(){
       var blockhash = '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b';
       it('will gave error from getBlockHash', function(){
-          var dashd = new DashService(baseConfig);
+          var stashd = new StashService(baseConfig);
           var getBlockHash = sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'});
-          dashd.nodes.push({
+          stashd.nodes.push({
               client: {
                   getBlockHash: getBlockHash
               }
           });
-          dashd.getBlockHeaders(10, function(err) {
+          stashd.getBlockHeaders(10, function(err) {
               err.should.be.instanceof(Error);
           });
       });
       it('it will give rpc error from client getblockheaders', function() {
-          var dashd = new DashService(baseConfig);
+          var stashd = new StashService(baseConfig);
           var getBlockHeader = sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'});
-          dashd.nodes.push({
+          stashd.nodes.push({
               client: {
                   getBlockHeader: getBlockHeader
               }
           });
-          dashd.getBlockHeaders(blockhash, function(err){
+          stashd.getBlockHeaders(blockhash, function(err){
               err.should.be.instanceof(Error);
           });
       });
       it("will get an array of block headers", function(){
-          var dashd = new DashService(baseConfig);
+          var stashd = new StashService(baseConfig);
 
           var result = {
               hash: '0000000000000a817cd3a74aec2f2246b59eb2cbb1ad730213e6c4a1d68ec2f6',
@@ -4289,20 +4289,20 @@ describe('Dash Service', function() {
           var getBlockHash2 = sinon.stub().callsArgWith(1, null, {
               result: "00000000000012093f65b9fdba40c4131270a90158864ea422f0ab6acc12ec08"
           });
-          dashd.nodes.push({
+          stashd.nodes.push({
               client: {
                   getBlockHeader: getBlockHeader,
                   getBlockHash: getBlockHash
               }
           });
-          dashd.nodes.push({
+          stashd.nodes.push({
               client: {
                   getBlockHeader: getBlockHeader2,
                   getBlockHash: getBlockHash2
               }
           });
 
-          dashd.getBlockHeaders(_blockHash, function(err, blockHeader){
+          stashd.getBlockHeaders(_blockHash, function(err, blockHeader){
               should.not.exist(err);
               blockHeader[0].hash.should.equal(_blockHash);
               // getBlockHeader.args[0][0].should.equal(blockhash);
@@ -4313,14 +4313,14 @@ describe('Dash Service', function() {
 
   describe('#_maybeGetBlockHash', function() {
     it('will not get block hash with an address', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlockHash = sinon.stub();
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      dashd._maybeGetBlockHash('8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi', function(err, hash) {
+      stashd._maybeGetBlockHash('8oUSpiq5REeEKAzS1qSXoJbZ9TRfH1L6mi', function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4330,14 +4330,14 @@ describe('Dash Service', function() {
       });
     });
     it('will not get block hash with non zero-nine numeric string', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlockHash = sinon.stub();
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      dashd._maybeGetBlockHash('109a', function(err, hash) {
+      stashd._maybeGetBlockHash('109a', function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4347,16 +4347,16 @@ describe('Dash Service', function() {
       });
     });
     it('will get the block hash if argument is a number', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlockHash = sinon.stub().callsArgWith(1, null, {
         result: 'blockhash'
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      dashd._maybeGetBlockHash(10, function(err, hash) {
+      stashd._maybeGetBlockHash(10, function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4366,16 +4366,16 @@ describe('Dash Service', function() {
       });
     });
     it('will get the block hash if argument is a number (as string)', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlockHash = sinon.stub().callsArgWith(1, null, {
         result: 'blockhash'
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      dashd._maybeGetBlockHash('10', function(err, hash) {
+      stashd._maybeGetBlockHash('10', function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4385,23 +4385,23 @@ describe('Dash Service', function() {
       });
     });
     it('will try multiple nodes if one fails', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlockHash = sinon.stub().callsArgWith(1, null, {
         result: 'blockhash'
       });
       getBlockHash.onCall(0).callsArgWith(1, {code: -1, message: 'test'});
-      dashd.tryAllInterval = 1;
-      dashd.nodes.push({
+      stashd.tryAllInterval = 1;
+      stashd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      dashd._maybeGetBlockHash(10, function(err, hash) {
+      stashd._maybeGetBlockHash(10, function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4411,20 +4411,20 @@ describe('Dash Service', function() {
       });
     });
     it('will give error from getBlockHash', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlockHash = sinon.stub().callsArgWith(1, {code: -1, message: 'test'});
-      dashd.tryAllInterval = 1;
-      dashd.nodes.push({
+      stashd.tryAllInterval = 1;
+      stashd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      dashd._maybeGetBlockHash(10, function(err, hash) {
+      stashd._maybeGetBlockHash(10, function(err, hash) {
         getBlockHash.callCount.should.equal(2);
         err.should.be.instanceOf(Error);
         err.message.should.equal('test');
@@ -4437,29 +4437,29 @@ describe('Dash Service', function() {
   describe('#getBlockOverview', function() {
     var blockhash = '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b';
     it('will handle error from maybeGetBlockHash', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd._maybeGetBlockHash = sinon.stub().callsArgWith(1, new Error('test'));
-      dashd.getBlockOverview(blockhash, function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd._maybeGetBlockHash = sinon.stub().callsArgWith(1, new Error('test'));
+      stashd.getBlockOverview(blockhash, function(err) {
         err.should.be.instanceOf(Error);
         done();
       });
     });
     it('will give error from client.getBlock', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, {code: -1, message: 'test'});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlock: getBlock
         }
       });
-      dashd.getBlockOverview(blockhash, function(err) {
+      stashd.getBlockOverview(blockhash, function(err) {
         err.should.be.instanceOf(Error);
         err.message.should.equal('test');
         done();
       });
     });
     it('will give expected result', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var blockResult = {
         hash: blockhash,
         version: 536870912,
@@ -4478,7 +4478,7 @@ describe('Dash Service', function() {
       var getBlock = sinon.stub().callsArgWith(2, null, {
         result: blockResult
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBlock: getBlock
         }
@@ -4498,12 +4498,12 @@ describe('Dash Service', function() {
         blockOverview.bits.should.equal('1a13ca10');
         blockOverview.difficulty.should.equal(847779.0710240941);
       }
-      dashd.getBlockOverview(blockhash, function(err, blockOverview) {
+      stashd.getBlockOverview(blockhash, function(err, blockOverview) {
         if (err) {
           return done(err);
         }
         checkBlock(blockOverview);
-        dashd.getBlockOverview(blockhash, function(err, blockOverview) {
+        stashd.getBlockOverview(blockhash, function(err, blockOverview) {
           checkBlock(blockOverview);
           getBlock.callCount.should.equal(1);
           done();
@@ -4514,30 +4514,30 @@ describe('Dash Service', function() {
 
   describe('#estimateFee', function() {
     it('will give rpc error', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var estimateFee = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           estimateFee: estimateFee
         }
       });
-      dashd.estimateFee(1, function(err) {
+      stashd.estimateFee(1, function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will call client estimateFee and give result', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var estimateFee = sinon.stub().callsArgWith(1, null, {
         result: -1
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           estimateFee: estimateFee
         }
       });
-      dashd.estimateFee(1, function(err, feesPerKb) {
+      stashd.estimateFee(1, function(err, feesPerKb) {
         if (err) {
           return done(err);
         }
@@ -4548,31 +4548,31 @@ describe('Dash Service', function() {
   });
 
   describe('#sendTransaction', function(done) {
-    var tx = dashcore.Transaction(txhex);
+    var tx = stashcore.Transaction(txhex);
     it('will give rpc error', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var sendRawTransaction = sinon.stub().callsArgWith(3, {message: 'error', code: -1});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           sendRawTransaction: sendRawTransaction
         }
       });
-      dashd.sendTransaction(txhex, function(err) {
+      stashd.sendTransaction(txhex, function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
       });
     });
     it('will send to client and get hash', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var sendRawTransaction = sinon.stub().callsArgWith(3, null, {
         result: tx.hash
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           sendRawTransaction: sendRawTransaction
         }
       });
-      dashd.sendTransaction(txhex, function(err, hash) {
+      stashd.sendTransaction(txhex, function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4580,16 +4580,16 @@ describe('Dash Service', function() {
       });
     });
     it('will send to client with absurd fees and get hash', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var sendRawTransaction = sinon.stub().callsArgWith(3, null, {
         result: tx.hash
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           sendRawTransaction: sendRawTransaction
         }
       });
-      dashd.sendTransaction(txhex, {allowAbsurdFees: true}, function(err, hash) {
+      stashd.sendTransaction(txhex, {allowAbsurdFees: true}, function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4597,60 +4597,60 @@ describe('Dash Service', function() {
       });
     });
     it('missing callback will throw error', function() {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var sendRawTransaction = sinon.stub().callsArgWith(3, null, {
         result: tx.hash
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           sendRawTransaction: sendRawTransaction
         }
       });
-      var transaction = dashcore.Transaction();
+      var transaction = stashcore.Transaction();
       (function() {
-        dashd.sendTransaction(transaction);
+        stashd.sendTransaction(transaction);
       }).should.throw(Error);
     });
   });
 
   describe('#getRawTransaction', function() {
     it('will give rpc error', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getRawTransaction = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: getRawTransaction
         }
       });
-      dashd.getRawTransaction('txid', function(err) {
+      stashd.getRawTransaction('txid', function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will try all nodes', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.tryAllInterval = 1;
+      var stashd = new StashService(baseConfig);
+      stashd.tryAllInterval = 1;
       var getRawTransactionWithError = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
       var getRawTransaction = sinon.stub().callsArgWith(1, null, {
         result: txhex
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: getRawTransactionWithError
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: getRawTransactionWithError
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: getRawTransaction
         }
       });
-      dashd.getRawTransaction('txid', function(err, tx) {
+      stashd.getRawTransaction('txid', function(err, tx) {
         if (err) {
           return done(err);
         }
@@ -4660,23 +4660,23 @@ describe('Dash Service', function() {
       });
     });
     it('will get from cache', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getRawTransaction = sinon.stub().callsArgWith(1, null, {
         result: txhex
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: getRawTransaction
         }
       });
-      dashd.getRawTransaction('txid', function(err, tx) {
+      stashd.getRawTransaction('txid', function(err, tx) {
         if (err) {
           return done(err);
         }
         should.exist(tx);
         tx.should.be.an.instanceof(Buffer);
 
-        dashd.getRawTransaction('txid', function(err, tx) {
+        stashd.getRawTransaction('txid', function(err, tx) {
           should.exist(tx);
           tx.should.be.an.instanceof(Buffer);
           getRawTransaction.callCount.should.equal(1);
@@ -4688,70 +4688,70 @@ describe('Dash Service', function() {
 
   describe('#getTransaction', function() {
     it('will give rpc error', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getRawTransaction = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: getRawTransaction
         }
       });
-      dashd.getTransaction('txid', function(err) {
+      stashd.getTransaction('txid', function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will try all nodes', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.tryAllInterval = 1;
+      var stashd = new StashService(baseConfig);
+      stashd.tryAllInterval = 1;
       var getRawTransactionWithError = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
       var getRawTransaction = sinon.stub().callsArgWith(1, null, {
         result: txhex
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: getRawTransactionWithError
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: getRawTransactionWithError
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: getRawTransaction
         }
       });
-      dashd.getTransaction('txid', function(err, tx) {
+      stashd.getTransaction('txid', function(err, tx) {
         if (err) {
           return done(err);
         }
         should.exist(tx);
-        tx.should.be.an.instanceof(dashcore.Transaction);
+        tx.should.be.an.instanceof(stashcore.Transaction);
         done();
       });
     });
     it('will get from cache', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getRawTransaction = sinon.stub().callsArgWith(1, null, {
         result: txhex
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: getRawTransaction
         }
       });
-      dashd.getTransaction('txid', function(err, tx) {
+      stashd.getTransaction('txid', function(err, tx) {
         if (err) {
           return done(err);
         }
         should.exist(tx);
-        tx.should.be.an.instanceof(dashcore.Transaction);
+        tx.should.be.an.instanceof(stashcore.Transaction);
 
-        dashd.getTransaction('txid', function(err, tx) {
+        stashd.getTransaction('txid', function(err, tx) {
           should.exist(tx);
-          tx.should.be.an.instanceof(dashcore.Transaction);
+          tx.should.be.an.instanceof(stashcore.Transaction);
           getRawTransaction.callCount.should.equal(1);
           done();
         });
@@ -4803,25 +4803,25 @@ describe('Dash Service', function() {
       ]
     };
     it('should give a transaction with height and timestamp', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.nodes.push({
         client: {
           getRawTransaction: sinon.stub().callsArgWith(2, {code: -1, message: 'Test error'})
         }
       });
       var txid = '2d950d00494caf6bfc5fff2a3f839f0eb50f663ae85ce092bc5f9d45296ae91f';
-      dashd.getDetailedTransaction(txid, function(err) {
+      stashd.getDetailedTransaction(txid, function(err) {
         should.exist(err);
         err.should.be.instanceof(errors.RPCError);
         done();
       });
     });
     it('should give a transaction with all properties', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getRawTransaction = sinon.stub().callsArgWith(2, null, {
         result: rpcRawTransaction
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: getRawTransaction
         }
@@ -4858,12 +4858,12 @@ describe('Dash Service', function() {
         should.equal(output.spentIndex, 2);
         should.equal(output.spentHeight, 100);
       }
-      dashd.getDetailedTransaction(txid, function(err, tx) {
+      stashd.getDetailedTransaction(txid, function(err, tx) {
         if (err) {
           return done(err);
         }
         checkTx(tx);
-        dashd.getDetailedTransaction(txid, function(err, tx) {
+        stashd.getDetailedTransaction(txid, function(err, tx) {
           if (err) {
             return done(err);
           }
@@ -4874,7 +4874,7 @@ describe('Dash Service', function() {
       });
     });
     it('should set coinbase to true', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var rawTransaction = JSON.parse((JSON.stringify(rpcRawTransaction)));
       delete rawTransaction.vin[0];
       rawTransaction.vin = [
@@ -4882,7 +4882,7 @@ describe('Dash Service', function() {
           coinbase: 'abcdef'
         }
       ];
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: sinon.stub().callsArgWith(2, null, {
             result: rawTransaction
@@ -4890,17 +4890,17 @@ describe('Dash Service', function() {
         }
       });
       var txid = '2d950d00494caf6bfc5fff2a3f839f0eb50f663ae85ce092bc5f9d45296ae91f';
-      dashd.getDetailedTransaction(txid, function(err, tx) {
+      stashd.getDetailedTransaction(txid, function(err, tx) {
         should.exist(tx);
         should.equal(tx.coinbase, true);
         done();
       });
     });
     it('will not include address if address length is zero', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var rawTransaction = JSON.parse((JSON.stringify(rpcRawTransaction)));
       rawTransaction.vout[0].scriptPubKey.addresses = [];
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: sinon.stub().callsArgWith(2, null, {
             result: rawTransaction
@@ -4908,17 +4908,17 @@ describe('Dash Service', function() {
         }
       });
       var txid = '2d950d00494caf6bfc5fff2a3f839f0eb50f663ae85ce092bc5f9d45296ae91f';
-      dashd.getDetailedTransaction(txid, function(err, tx) {
+      stashd.getDetailedTransaction(txid, function(err, tx) {
         should.exist(tx);
         should.equal(tx.outputs[0].address, null);
         done();
       });
     });
     it('will not include address if address length is greater than 1', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var rawTransaction = JSON.parse((JSON.stringify(rpcRawTransaction)));
       rawTransaction.vout[0].scriptPubKey.addresses = ['one', 'two'];
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: sinon.stub().callsArgWith(2, null, {
             result: rawTransaction
@@ -4926,17 +4926,17 @@ describe('Dash Service', function() {
         }
       });
       var txid = '2d950d00494caf6bfc5fff2a3f839f0eb50f663ae85ce092bc5f9d45296ae91f';
-      dashd.getDetailedTransaction(txid, function(err, tx) {
+      stashd.getDetailedTransaction(txid, function(err, tx) {
         should.exist(tx);
         should.equal(tx.outputs[0].address, null);
         done();
       });
     });
     it('will handle scriptPubKey.addresses not being set', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var rawTransaction = JSON.parse((JSON.stringify(rpcRawTransaction)));
       delete rawTransaction.vout[0].scriptPubKey['addresses'];
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: sinon.stub().callsArgWith(2, null, {
             result: rawTransaction
@@ -4944,18 +4944,18 @@ describe('Dash Service', function() {
         }
       });
       var txid = '2d950d00494caf6bfc5fff2a3f839f0eb50f663ae85ce092bc5f9d45296ae91f';
-      dashd.getDetailedTransaction(txid, function(err, tx) {
+      stashd.getDetailedTransaction(txid, function(err, tx) {
         should.exist(tx);
         should.equal(tx.outputs[0].address, null);
         done();
       });
     });
     it('will not include script if input missing scriptSig or coinbase', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var rawTransaction = JSON.parse((JSON.stringify(rpcRawTransaction)));
       delete rawTransaction.vin[0].scriptSig;
       delete rawTransaction.vin[0].coinbase;
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: sinon.stub().callsArgWith(2, null, {
             result: rawTransaction
@@ -4963,17 +4963,17 @@ describe('Dash Service', function() {
         }
       });
       var txid = '2d950d00494caf6bfc5fff2a3f839f0eb50f663ae85ce092bc5f9d45296ae91f';
-      dashd.getDetailedTransaction(txid, function(err, tx) {
+      stashd.getDetailedTransaction(txid, function(err, tx) {
         should.exist(tx);
         should.equal(tx.inputs[0].script, null);
         done();
       });
     });
     it('will set height to -1 if missing height', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var rawTransaction = JSON.parse((JSON.stringify(rpcRawTransaction)));
       delete rawTransaction.height;
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getRawTransaction: sinon.stub().callsArgWith(2, null, {
             result: rawTransaction
@@ -4981,7 +4981,7 @@ describe('Dash Service', function() {
         }
       });
       var txid = '2d950d00494caf6bfc5fff2a3f839f0eb50f663ae85ce092bc5f9d45296ae91f';
-      dashd.getDetailedTransaction(txid, function(err, tx) {
+      stashd.getDetailedTransaction(txid, function(err, tx) {
         should.exist(tx);
         should.equal(tx.height, -1);
         done();
@@ -4991,30 +4991,30 @@ describe('Dash Service', function() {
 
   describe('#getBestBlockHash', function() {
     it('will give rpc error', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, {message: 'error', code: -1});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBestBlockHash: getBestBlockHash
         }
       });
-      dashd.getBestBlockHash(function(err) {
+      stashd.getBestBlockHash(function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will call client getInfo and give result', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {
         result: 'besthash'
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getBestBlockHash: getBestBlockHash
         }
       });
-      dashd.getBestBlockHash(function(err, hash) {
+      stashd.getBestBlockHash(function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -5027,35 +5027,35 @@ describe('Dash Service', function() {
 
   describe('#getSpentInfo', function() {
     it('will give rpc error', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getSpentInfo = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getSpentInfo: getSpentInfo
         }
       });
-      dashd.getSpentInfo({}, function(err) {
+      stashd.getSpentInfo({}, function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will empty object when not found', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getSpentInfo = sinon.stub().callsArgWith(1, {message: 'test', code: -5});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getSpentInfo: getSpentInfo
         }
       });
-      dashd.getSpentInfo({}, function(err, info) {
+      stashd.getSpentInfo({}, function(err, info) {
         should.not.exist(err);
         info.should.deep.equal({});
         done();
       });
     });
     it('will call client getSpentInfo and give result', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getSpentInfo = sinon.stub().callsArgWith(1, null, {
         result: {
           txid: 'txid',
@@ -5063,12 +5063,12 @@ describe('Dash Service', function() {
           height: 101
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getSpentInfo: getSpentInfo
         }
       });
-      dashd.getSpentInfo({}, function(err, info) {
+      stashd.getSpentInfo({}, function(err, info) {
         if (err) {
           return done(err);
         }
@@ -5082,22 +5082,22 @@ describe('Dash Service', function() {
 
   describe('#getInfo', function() {
     it('will give rpc error', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var getInfo = sinon.stub().callsArgWith(0, {message: 'error', code: -1});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getInfo: getInfo
         }
       });
-      dashd.getInfo(function(err) {
+      stashd.getInfo(function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will call client getInfo and give result', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.node.getNetworkName = sinon.stub().returns('testnet');
+      var stashd = new StashService(baseConfig);
+      stashd.node.getNetworkName = sinon.stub().returns('testnet');
       var getInfo = sinon.stub().callsArgWith(0, null, {
         result: {
           version: 1,
@@ -5112,12 +5112,12 @@ describe('Dash Service', function() {
           errors: ''
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           getInfo: getInfo
         }
       });
-      dashd.getInfo(function(err, info) {
+      stashd.getInfo(function(err, info) {
         if (err) {
           return done(err);
         }
@@ -5140,7 +5140,7 @@ describe('Dash Service', function() {
 
   describe('#govObject', function() {
     it('will call client gobject list and give result', function(done) {
-        var dashd = new DashService(baseConfig);
+        var stashd = new StashService(baseConfig);
         var gobject = sinon.stub().callsArgWith(1, null, {
             result: [{
                 "Hash": "9ce5609d41b88fca51dd3f4ad098467cf8c6f2c1b2adf93a6862a7b9bdf01a00",
@@ -5152,7 +5152,7 @@ describe('Dash Service', function() {
                     "payment_amount": 3,
                     "start_epoch": 1484661709,
                     "type": 1,
-                    "url": "https://www.dash.org"
+                    "url": "https://www.stash.org"
                 },
                 "AbsoluteYesCount": 0,
                 "YesCount": 0,
@@ -5168,7 +5168,7 @@ describe('Dash Service', function() {
                     "payment_amount": 98,
                     "start_epoch": 1484654915,
                     "type": 1,
-                    "url": "https://www.dash.org"
+                    "url": "https://www.stash.org"
                 },
                 "AbsoluteYesCount": 0,
                 "YesCount": 0,
@@ -5184,7 +5184,7 @@ describe('Dash Service', function() {
                     "payment_amount": 84,
                     "start_epoch": 1483765282,
                     "type": 1,
-                    "url": "https://www.dash.org"
+                    "url": "https://www.stash.org"
                 },
                 "AbsoluteYesCount": 0,
                 "YesCount": 0,
@@ -5192,12 +5192,12 @@ describe('Dash Service', function() {
                 "AbstainCount": 0
             }]
         });
-        dashd.nodes.push({
+        stashd.nodes.push({
             client: {
                 gobject: gobject
             }
         });
-        dashd.govObjectList({type: 1}, function(err, result) {
+        stashd.govObjectList({type: 1}, function(err, result) {
             if (err) {
                 return done(err);
             }
@@ -5208,14 +5208,14 @@ describe('Dash Service', function() {
     });
 
     it('will call client gobject list and return error', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var gobject = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           gobject: gobject
         }
       });
-      dashd.govObjectList({type: 1}, function(err, result) {
+      stashd.govObjectList({type: 1}, function(err, result) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
@@ -5223,12 +5223,12 @@ describe('Dash Service', function() {
     });
 
     it('will call client gobject get and give result', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var hash = "4ef24027c631c43035aa4cf5c672e1298311decd9cffbd16731f454c9c0d6d00";
       var gobject = sinon.stub().callsArgWith(2, null, {
         result: {
           "DataHex": "5b5b2270726f706f73616c222c7b22656e645f65706f6368223a313438333835353139332c226e616d65223a2237656139616366663561653833643863396532313764333061326234643130656638663137316638222c227061796d656e745f61646472657373223a22795a3744596b44484348664831647737724b6459614b6356796b5a6d756e62714e4c222c227061796d656e745f616d6f756e74223a38342c2273746172745f65706f6368223a313438333736353238322c2274797065223a312c2275726c223a2268747470733a2f2f7777772e646173682e6f7267227d5d5d",
-          "DataString": "[[\"proposal\",{\"end_epoch\":1483855193,\"name\":\"7ea9acff5ae83d8c9e217d30a2b4d10ef8f171f8\",\"payment_address\":\"yZ7DYkDHCHfH1dw7rKdYaKcVykZmunbqNL\",\"payment_amount\":84,\"start_epoch\":1483765282,\"type\":1,\"url\":\"https://www.dash.org\"}]]",
+          "DataString": "[[\"proposal\",{\"end_epoch\":1483855193,\"name\":\"7ea9acff5ae83d8c9e217d30a2b4d10ef8f171f8\",\"payment_address\":\"yZ7DYkDHCHfH1dw7rKdYaKcVykZmunbqNL\",\"payment_amount\":84,\"start_epoch\":1483765282,\"type\":1,\"url\":\"https://www.stash.org\"}]]",
           "Hash": "4ef24027c631c43035aa4cf5c672e1298311decd9cffbd16731f454c9c0d6d00",
           "CollateralHash": "6be3a3ae49498ec8f4e5cba56ac44164aeb78e57f2dbc716f4ff863034830d08",
           "CreationTime": 1483724928,
@@ -5264,12 +5264,12 @@ describe('Dash Service', function() {
           "fCachedEndorsed": false
         }
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           gobject: gobject
         }
       });
-      dashd.govObjectHash('4ef24027c631c43035aa4cf5c672e1298311decd9cffbd16731f454c9c0d6d00', function(err, result) {
+      stashd.govObjectHash('4ef24027c631c43035aa4cf5c672e1298311decd9cffbd16731f454c9c0d6d00', function(err, result) {
         if (err) {
           return done(err);
         }
@@ -5288,14 +5288,14 @@ describe('Dash Service', function() {
     });
 
     it('will call client gobject get and return error', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var gobject = sinon.stub().callsArgWith(2, {message: 'error', code: -1});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           gobject: gobject
         }
       });
-      dashd.govObjectHash('4ef24027c631c43035aa4cf5c672e1298311decd9cffbd16731f454c9c0d6d00', function(err, result) {
+      stashd.govObjectHash('4ef24027c631c43035aa4cf5c672e1298311decd9cffbd16731f454c9c0d6d00', function(err, result) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
@@ -5305,9 +5305,9 @@ describe('Dash Service', function() {
   });
 	describe('#sporksList', function(){
 		it('will call client sporks and give result', function(done){
-			var dashd = new DashService(baseConfig);
+			var stashd = new StashService(baseConfig);
 
-			dashd.nodes.push({
+			stashd.nodes.push({
 				client: {
 					spork: function(param, callback){
 						if(param==="show"){
@@ -5327,7 +5327,7 @@ describe('Dash Service', function() {
 					}
 				}
 			});
-			dashd.getSpork(function(err, SporkList) {
+			stashd.getSpork(function(err, SporkList) {
 				if (err) {
 					return done(err);
 				}
@@ -5349,9 +5349,9 @@ describe('Dash Service', function() {
 	});
   describe('#getMNList', function(){
     it('will call client masternode list and give result', function(done){
-	    var dashd = new DashService(baseConfig);
-	    dashd.isSynced = function(callback) { return callback(null, true) };
-	    dashd.nodes.push({
+	    var stashd = new StashService(baseConfig);
+	    stashd.isSynced = function(callback) { return callback(null, true) };
+	    stashd.nodes.push({
 		    client: {
 			    masternodelist: function(type, cb){
 			      switch (type){
@@ -5396,7 +5396,7 @@ describe('Dash Service', function() {
 		    }
 	    });
 	    
-	    dashd.getMNList(function(err, MNList) {
+	    stashd.getMNList(function(err, MNList) {
 		    if (err) {
 			    return done(err);
 		    }
@@ -5415,9 +5415,9 @@ describe('Dash Service', function() {
     });
 
     it('will return error if one of nodes not synced yet', function(done){
-      var dashd = new DashService(baseConfig);
-      dashd.isSynced = function(callback) { return callback(null, false) };
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.isSynced = function(callback) { return callback(null, false) };
+      stashd.nodes.push({
         client: {
           masternodelist: function(type, cb){
             switch (type){
@@ -5462,7 +5462,7 @@ describe('Dash Service', function() {
         }
       });
 
-      dashd.getMNList(function(err, MNList) {
+      stashd.getMNList(function(err, MNList) {
         err.should.be.instanceof(Error);
         console.log(err);
         done();
@@ -5470,9 +5470,9 @@ describe('Dash Service', function() {
     });
 
     it('will return error if checking synced state of nodes failed', function(done){
-      var dashd = new DashService(baseConfig);
-      dashd.isSynced = function(callback) { return callback(new Error('Failed')) };
-      dashd.nodes.push({
+      var stashd = new StashService(baseConfig);
+      stashd.isSynced = function(callback) { return callback(new Error('Failed')) };
+      stashd.nodes.push({
         client: {
           masternodelist: function(type, cb){
             switch (type){
@@ -5517,7 +5517,7 @@ describe('Dash Service', function() {
         }
       });
 
-      dashd.getMNList(function(err, MNList) {
+      stashd.getMNList(function(err, MNList) {
         err.should.be.instanceof(Error);
         done();
       });
@@ -5526,30 +5526,30 @@ describe('Dash Service', function() {
 
   describe('#generateBlock', function() {
     it('will give rpc error', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var generate = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           generate: generate
         }
       });
-      dashd.generateBlock(10, function(err) {
+      stashd.generateBlock(10, function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will call client generate and give result', function(done) {
-      var dashd = new DashService(baseConfig);
+      var stashd = new StashService(baseConfig);
       var generate = sinon.stub().callsArgWith(1, null, {
         result: ['hash']
       });
-      dashd.nodes.push({
+      stashd.nodes.push({
         client: {
           generate: generate
         }
       });
-      dashd.generateBlock(10, function(err, hashes) {
+      stashd.generateBlock(10, function(err, hashes) {
         if (err) {
           return done(err);
         }
@@ -5562,45 +5562,45 @@ describe('Dash Service', function() {
 
   describe('#stop', function() {
     it('will callback if spawn is not set', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.stop(done);
+      var stashd = new StashService(baseConfig);
+      stashd.stop(done);
     });
     it('will exit spawned process', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.spawn = {};
-      dashd.spawn.process = new EventEmitter();
-      dashd.spawn.process.kill = sinon.stub();
-      dashd.stop(done);
-      dashd.spawn.process.kill.callCount.should.equal(1);
-      dashd.spawn.process.kill.args[0][0].should.equal('SIGINT');
-      dashd.spawn.process.emit('exit', 0);
+      var stashd = new StashService(baseConfig);
+      stashd.spawn = {};
+      stashd.spawn.process = new EventEmitter();
+      stashd.spawn.process.kill = sinon.stub();
+      stashd.stop(done);
+      stashd.spawn.process.kill.callCount.should.equal(1);
+      stashd.spawn.process.kill.args[0][0].should.equal('SIGINT');
+      stashd.spawn.process.emit('exit', 0);
     });
     it('will give error with non-zero exit status code', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.spawn = {};
-      dashd.spawn.process = new EventEmitter();
-      dashd.spawn.process.kill = sinon.stub();
-      dashd.stop(function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd.spawn = {};
+      stashd.spawn.process = new EventEmitter();
+      stashd.spawn.process.kill = sinon.stub();
+      stashd.stop(function(err) {
         err.should.be.instanceof(Error);
         err.code.should.equal(1);
         done();
       });
-      dashd.spawn.process.kill.callCount.should.equal(1);
-      dashd.spawn.process.kill.args[0][0].should.equal('SIGINT');
-      dashd.spawn.process.emit('exit', 1);
+      stashd.spawn.process.kill.callCount.should.equal(1);
+      stashd.spawn.process.kill.args[0][0].should.equal('SIGINT');
+      stashd.spawn.process.emit('exit', 1);
     });
     it('will stop after timeout', function(done) {
-      var dashd = new DashService(baseConfig);
-      dashd.shutdownTimeout = 300;
-      dashd.spawn = {};
-      dashd.spawn.process = new EventEmitter();
-      dashd.spawn.process.kill = sinon.stub();
-      dashd.stop(function(err) {
+      var stashd = new StashService(baseConfig);
+      stashd.shutdownTimeout = 300;
+      stashd.spawn = {};
+      stashd.spawn.process = new EventEmitter();
+      stashd.spawn.process.kill = sinon.stub();
+      stashd.stop(function(err) {
         err.should.be.instanceof(Error);
         done();
       });
-      dashd.spawn.process.kill.callCount.should.equal(1);
-      dashd.spawn.process.kill.args[0][0].should.equal('SIGINT');
+      stashd.spawn.process.kill.callCount.should.equal(1);
+      stashd.spawn.process.kill.args[0][0].should.equal('SIGINT');
     });
   });
 

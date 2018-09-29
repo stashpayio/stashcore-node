@@ -1,39 +1,39 @@
 'use strict';
 
-// To run the tests: $ mocha -R spec regtest/dashd.js
+// To run the tests: $ mocha -R spec regtest/stashd.js
 
 var path = require('path');
 var index = require('..');
 var log = index.log;
 
 var chai = require('chai');
-var dashcore = require('@dashevo/dashcore-lib');
-var BN = dashcore.crypto.BN;
+var stashcore = require('@stashcore/stashcore-lib');
+var BN = stashcore.crypto.BN;
 var async = require('async');
 var rimraf = require('rimraf');
-var dashd;
+var stashd;
 
 /* jshint unused: false */
 var should = chai.should();
 var assert = chai.assert;
 var sinon = require('sinon');
-var DashdRPC = require('@dashevo/dashd-rpc');
+var StashdRPC = require('@stashcore/stashd-rpc');
 var transactionData = [];
 var blockHashes = [];
 var utxos;
 var client;
 var coinbasePrivateKey;
-var privateKey = dashcore.PrivateKey();
-var destKey = dashcore.PrivateKey();
+var privateKey = stashcore.PrivateKey();
+var destKey = stashcore.PrivateKey();
 
-describe('Dashd Functionality', function() {
+describe('Stashd Functionality', function() {
 
   before(function(done) {
     this.timeout(200000);
 
     // Add the regtest network
-    dashcore.Networks.enableRegtest();
-    var regtestNetwork = dashcore.Networks.get('regtest');
+    stashcore.Networks.enableRegtest();
+    var regtestNetwork = stashcore.Networks.get('regtest');
 
     var datadir = __dirname + '/data';
 
@@ -43,10 +43,10 @@ describe('Dashd Functionality', function() {
         throw err;
       }
 
-      dashd = require('../').services.Dash({
+      stashd = require('../').services.Stash({
         spawn: {
           datadir: datadir,
-          exec: path.resolve(__dirname, process.env.HOME, './.dashcore/data/dashd')
+          exec: path.resolve(__dirname, process.env.HOME, './.stashcore/data/stashd')
         },
         node: {
           network: regtestNetwork,
@@ -56,20 +56,20 @@ describe('Dashd Functionality', function() {
         }
       });
 
-      dashd.on('error', function(err) {
+      stashd.on('error', function(err) {
         log.error('error="%s"', err.message);
       });
 
-      log.info('Waiting for Dash Core to initialize...');
+      log.info('Waiting for Stash Core to initialize...');
 
-      dashd.start(function() {
-        log.info('Dashd started');
+      stashd.start(function() {
+        log.info('Stashd started');
 
-        client = new DashdRPC({
+        client = new StashdRPC({
           protocol: 'http',
           host: '127.0.0.1',
           port: 30331,
-          user: 'dash',
+          user: 'stash',
           pass: 'local321',
           rejectUnauthorized: false
         });
@@ -131,8 +131,8 @@ describe('Dashd Functionality', function() {
 
   after(function(done) {
     this.timeout(60000);
-    dashd.node.stopping = true;
-    dashd.stop(function(err, result) {
+    stashd.node.stopping = true;
+    stashd.stop(function(err, result) {
       done();
     });
   });
@@ -141,7 +141,7 @@ describe('Dashd Functionality', function() {
 
     [0,1,2,3,5,6,7,8,9].forEach(function(i) {
       it('generated block ' + i, function(done) {
-        dashd.getBlock(blockHashes[i], function(err, block) {
+        stashd.getBlock(blockHashes[i], function(err, block) {
           if (err) {
             throw err;
           }
@@ -156,7 +156,7 @@ describe('Dashd Functionality', function() {
   describe('get blocks as buffers', function() {
     [0,1,2,3,5,6,7,8,9].forEach(function(i) {
       it('generated block ' + i, function(done) {
-        dashd.getRawBlock(blockHashes[i], function(err, block) {
+        stashd.getRawBlock(blockHashes[i], function(err, block) {
           if (err) {
             throw err;
           }
@@ -170,8 +170,8 @@ describe('Dashd Functionality', function() {
 
   describe('get errors as error instances', function() {
     it('will wrap an rpc into a javascript error', function(done) {
-      dashd.client.getBlock(1000000000, function(err, response) {
-        var error = dashd._wrapRPCError(err);
+      stashd.client.getBlock(1000000000, function(err, response) {
+        var error = stashd._wrapRPCError(err);
         (error instanceof Error).should.equal(true);
         error.message.should.equal(err.message);
         error.code.should.equal(err.code);
@@ -187,7 +187,7 @@ describe('Dashd Functionality', function() {
       it('generated block ' + i, function(done) {
         // add the genesis block
         var height = i + 1;
-        dashd.getBlock(i + 1, function(err, block) {
+        stashd.getBlock(i + 1, function(err, block) {
           if (err) {
             throw err;
           }
@@ -199,7 +199,7 @@ describe('Dashd Functionality', function() {
     });
 
     it('will get error with number greater than tip', function(done) {
-      dashd.getBlock(1000000000, function(err, response) {
+      stashd.getBlock(1000000000, function(err, response) {
         should.exist(err);
         err.code.should.equal(-8);
         done();
@@ -212,9 +212,9 @@ describe('Dashd Functionality', function() {
     [0,1,2,3,4,5,6,7,8,9].forEach(function(i) {
       it('for tx ' + i, function(done) {
         var txhex = transactionData[i];
-        var tx = new dashcore.Transaction();
+        var tx = new stashcore.Transaction();
         tx.fromString(txhex);
-        dashd.getTransaction(tx.hash, function(err, response) {
+        stashd.getTransaction(tx.hash, function(err, response) {
           if (err) {
             throw err;
           }
@@ -226,7 +226,7 @@ describe('Dashd Functionality', function() {
 
     it('will return error if the transaction does not exist', function(done) {
       var txid = '6226c407d0e9705bdd7158e60983e37d0f5d23529086d6672b07d9238d5aa618';
-      dashd.getTransaction(txid, function(err, response) {
+      stashd.getTransaction(txid, function(err, response) {
         should.exist(err);
         done();
       });
@@ -237,9 +237,9 @@ describe('Dashd Functionality', function() {
     [0,1,2,3,4,5,6,7,8,9].forEach(function(i) {
       it('for tx ' + i, function(done) {
         var txhex = transactionData[i];
-        var tx = new dashcore.Transaction();
+        var tx = new stashcore.Transaction();
         tx.fromString(txhex);
-        dashd.getRawTransaction(tx.hash, function(err, response) {
+        stashd.getRawTransaction(tx.hash, function(err, response) {
           if (err) {
             throw err;
           }
@@ -252,7 +252,7 @@ describe('Dashd Functionality', function() {
 
     it('will return error if the transaction does not exist', function(done) {
       var txid = '6226c407d0e9705bdd7158e60983e37d0f5d23529086d6672b07d9238d5aa618';
-      dashd.getRawTransaction(txid, function(err, response) {
+      stashd.getRawTransaction(txid, function(err, response) {
         should.exist(err);
         done();
       });
@@ -263,7 +263,7 @@ describe('Dashd Functionality', function() {
     var expectedWork = new BN(6);
     [1,2,3,4,5,6,7,8,9].forEach(function(i) {
       it('generate block ' + i, function(done) {
-        dashd.getBlockHeader(blockHashes[i], function(err, blockIndex) {
+        stashd.getBlockHeader(blockHashes[i], function(err, blockIndex) {
           if (err) {
             return done(err);
           }
@@ -281,7 +281,7 @@ describe('Dashd Functionality', function() {
       });
     });
     it('will get null prevHash for the genesis block', function(done) {
-      dashd.getBlockHeader(0, function(err, header) {
+      stashd.getBlockHeader(0, function(err, header) {
         if (err) {
           return done(err);
         }
@@ -291,7 +291,7 @@ describe('Dashd Functionality', function() {
       });
     });
     it('will get error for block not found', function(done) {
-      dashd.getBlockHeader('notahash', function(err, header) {
+      stashd.getBlockHeader('notahash', function(err, header) {
         should.exist(err);
         done();
       });
@@ -302,7 +302,7 @@ describe('Dashd Functionality', function() {
     var expectedWork = new BN(6);
     [2,3,4,5,6,7,8,9].forEach(function(i) {
       it('generate block ' + i, function() {
-        dashd.getBlockHeader(i, function(err, header) {
+        stashd.getBlockHeader(i, function(err, header) {
           should.exist(header);
           should.exist(header.chainWork);
           var work = new BN(header.chainWork, 'hex');
@@ -316,7 +316,7 @@ describe('Dashd Functionality', function() {
       });
     });
     it('will get error with number greater than tip', function(done) {
-      dashd.getBlockHeader(100000, function(err, header) {
+      stashd.getBlockHeader(100000, function(err, header) {
         should.exist(err);
         done();
       });
@@ -328,14 +328,14 @@ describe('Dashd Functionality', function() {
     it('will not error and return the transaction hash', function(done) {
 
       // create and sign the transaction
-      var tx = dashcore.Transaction();
+      var tx = stashcore.Transaction();
       tx.from(utxos[0]);
       tx.change(privateKey.toAddress());
       tx.to(destKey.toAddress(), utxos[0].amount * 1e8 - 1000);
-      tx.sign(dashcore.PrivateKey.fromWIF(utxos[0].privateKeyWIF));
+      tx.sign(stashcore.PrivateKey.fromWIF(utxos[0].privateKeyWIF));
 
       // test sending the transaction
-      dashd.sendTransaction(tx.serialize(), function(err, hash) {
+      stashd.sendTransaction(tx.serialize(), function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -346,11 +346,11 @@ describe('Dashd Functionality', function() {
     });
 
     it('will throw an error if an unsigned transaction is sent', function(done) {
-      var tx = dashcore.Transaction();
+      var tx = stashcore.Transaction();
       tx.from(utxos[1]);
       tx.change(privateKey.toAddress());
       tx.to(destKey.toAddress(), utxos[1].amount * 1e8 - 1000);
-      dashd.sendTransaction(tx.uncheckedSerialize(), function(err, hash) {
+      stashd.sendTransaction(tx.uncheckedSerialize(), function(err, hash) {
         should.exist(err);
         (err instanceof Error).should.equal(true);
         should.not.exist(hash);
@@ -360,11 +360,11 @@ describe('Dashd Functionality', function() {
 
     it('will throw an error for unexpected types (tx decode failed)', function(done) {
       var garbage = new Buffer('abcdef', 'hex');
-      dashd.sendTransaction(garbage, function(err, hash) {
+      stashd.sendTransaction(garbage, function(err, hash) {
         should.exist(err);
         should.not.exist(hash);
         var num = 23;
-        dashd.sendTransaction(num, function(err, hash) {
+        stashd.sendTransaction(num, function(err, hash) {
           should.exist(err);
           (err instanceof Error).should.equal(true);
           should.not.exist(hash);
@@ -374,19 +374,19 @@ describe('Dashd Functionality', function() {
     });
 
     it('will emit "tx" events', function(done) {
-      var tx = dashcore.Transaction();
+      var tx = stashcore.Transaction();
       tx.from(utxos[2]);
       tx.change(privateKey.toAddress());
       tx.to(destKey.toAddress(), utxos[2].amount * 1e8 - 1000);
-      tx.sign(dashcore.PrivateKey.fromWIF(utxos[2].privateKeyWIF));
+      tx.sign(stashcore.PrivateKey.fromWIF(utxos[2].privateKeyWIF));
 
       var serialized = tx.serialize();
 
-      dashd.once('tx', function(buffer) {
+      stashd.once('tx', function(buffer) {
         buffer.toString('hex').should.equal(serialized);
         done();
       });
-      dashd.sendTransaction(serialized, function(err, hash) {
+      stashd.sendTransaction(serialized, function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -398,7 +398,7 @@ describe('Dashd Functionality', function() {
 
   describe('fee estimation', function() {
     it('will estimate fees', function(done) {
-      dashd.estimateFee(1, function(err, fees) {
+      stashd.estimateFee(1, function(err, fees) {
         if (err) {
           return done(err);
         }
@@ -411,7 +411,7 @@ describe('Dashd Functionality', function() {
   describe('tip updates', function() {
     it('will get an event when the tip is new', function(done) {
       this.timeout(4000);
-      dashd.on('tip', function(height) {
+      stashd.on('tip', function(height) {
         if (height === 151) {
           done();
         }
@@ -426,7 +426,7 @@ describe('Dashd Functionality', function() {
 
   describe('get detailed transaction', function() {
     it('should include details for coinbase tx', function(done) {
-      dashd.getDetailedTransaction(utxos[0].txid, function(err, tx) {
+      stashd.getDetailedTransaction(utxos[0].txid, function(err, tx) {
         if (err) {
           return done(err);
         }
@@ -464,7 +464,7 @@ describe('Dashd Functionality', function() {
 
   describe('#getInfo', function() {
     it('will get information', function(done) {
-      dashd.getInfo(function(err, info) {
+      stashd.getInfo(function(err, info) {
         if (err) {
           return done(err);
         }

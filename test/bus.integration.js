@@ -2,7 +2,7 @@
 
 var sinon = require('sinon');
 var Service = require('../lib/service');
-var DashcoreNode = require('../lib/node');
+var StashcoreNode = require('../lib/node');
 var util = require('util');
 var should = require('chai').should();
 var index = require('../lib');
@@ -53,7 +53,7 @@ describe('Bus Functionality', function() {
   });
 
   it('should subscribe to testEvent', function(done) {
-    var node = new DashcoreNode({
+    var node = new StashcoreNode({
       datadir: './',
       network: 'testnet',
       port: 8888,
@@ -77,7 +77,7 @@ describe('Bus Functionality', function() {
   });
 
   it('should unsubscribe from a testEvent', function(done) {
-    var node = new DashcoreNode({
+    var node = new StashcoreNode({
       datadir: './',
       network: 'testnet',
       port: 8888,

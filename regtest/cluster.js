@@ -4,27 +4,27 @@ var path = require('path');
 var async = require('async');
 var spawn = require('child_process').spawn;
 
-var DashdRPC = require('@dashevo/dashd-rpc');
+var StashdRPC = require('@stashcore/stashd-rpc');
 var rimraf = require('rimraf');
-var dashcore = require('@dashevo/dashcore-lib');
+var stashcore = require('@stashcore/stashcore-lib');
 var chai = require('chai');
 var should = chai.should();
 
 var index = require('..');
 var log = index.log;
 log.debug = function() {};
-var DashcoreNode = index.Node;
-var DashService = index.services.Dash;
+var StashcoreNode = index.Node;
+var StashService = index.services.Stash;
 
-describe('Dash Cluster', function() {
+describe('Stash Cluster', function() {
   var node;
   var daemons = [];
-  var execPath = path.resolve(__dirname, process.env.HOME, './.dashcore/data/dashd')
+  var execPath = path.resolve(__dirname, process.env.HOME, './.stashcore/data/stashd')
   var nodesConf = [
     {
       datadir: path.resolve(__dirname, './data/node1'),
-      conf: path.resolve(__dirname, './data/node1/dash.conf'),
-      rpcuser: 'dash',
+      conf: path.resolve(__dirname, './data/node1/stash.conf'),
+      rpcuser: 'stash',
       rpcpassword: 'local321',
       rpcport: 30521,
       zmqpubrawtx: 'tcp://127.0.0.1:30611',
@@ -32,8 +32,8 @@ describe('Dash Cluster', function() {
     },
     {
       datadir: path.resolve(__dirname, './data/node2'),
-      conf: path.resolve(__dirname, './data/node2/dash.conf'),
-      rpcuser: 'dash',
+      conf: path.resolve(__dirname, './data/node2/stash.conf'),
+      rpcuser: 'stash',
       rpcpassword: 'local321',
       rpcport: 30522,
       zmqpubrawtx: 'tcp://127.0.0.1:30622',
@@ -41,8 +41,8 @@ describe('Dash Cluster', function() {
     },
     {
       datadir: path.resolve(__dirname, './data/node3'),
-      conf: path.resolve(__dirname, './data/node3/dash.conf'),
-      rpcuser: 'dash',
+      conf: path.resolve(__dirname, './data/node3/stash.conf'),
+      rpcuser: 'stash',
       rpcpassword: 'local321',
       rpcport: 30523,
       zmqpubrawtx: 'tcp://127.0.0.1:30633',
@@ -51,7 +51,7 @@ describe('Dash Cluster', function() {
   ];
 
   before(function(done) {
-    log.info('Starting 3 dashd daemons');
+    log.info('Starting 3 stashd daemons');
     this.timeout(200000);
     async.each(nodesConf, function(nodeConf, next) {
       var opts = [
@@ -67,7 +67,7 @@ describe('Dash Cluster', function() {
 
         var process = spawn(execPath, opts, {stdio: 'inherit'});
 
-        var client = new DashdRPC({
+        var client = new StashdRPC({
           protocol: 'http',
           host: '127.0.0.1',
           port: nodeConf.rpcport,
@@ -96,34 +96,34 @@ describe('Dash Cluster', function() {
     }, 1000);
   });
 
-  it('step 1: will connect to three dashd daemons', function(done) {
+  it('step 1: will connect to three stashd daemons', function(done) {
     this.timeout(20000);
     var configuration = {
       network: 'regtest',
       services: [
         {
-          name: 'dashd',
-          module: DashService,
+          name: 'stashd',
+          module: StashService,
           config: {
             connect: [
               {
                 rpchost: '127.0.0.1',
                 rpcport: 30521,
-                rpcuser: 'dash',
+                rpcuser: 'stash',
                 rpcpassword: 'local321',
                 zmqpubrawtx: 'tcp://127.0.0.1:30611'
               },
               {
                 rpchost: '127.0.0.1',
                 rpcport: 30522,
-                rpcuser: 'dash',
+                rpcuser: 'stash',
                 rpcpassword: 'local321',
                 zmqpubrawtx: 'tcp://127.0.0.1:30622'
               },
               {
                 rpchost: '127.0.0.1',
                 rpcport: 30523,
-                rpcuser: 'dash',
+                rpcuser: 'stash',
                 rpcpassword: 'local321',
                 zmqpubrawtx: 'tcp://127.0.0.1:30633'
               }
@@ -133,10 +133,10 @@ describe('Dash Cluster', function() {
       ]
     };
 
-    var regtest = dashcore.Networks.get('regtest');
+    var regtest = stashcore.Networks.get('regtest');
     should.exist(regtest);
 
-    node = new DashcoreNode(configuration);
+    node = new StashcoreNode(configuration);
 
     node.on('error', function(err) {
       log.error(err);
@@ -156,7 +156,7 @@ describe('Dash Cluster', function() {
 
   it('step 2: receive block events', function(done) {
     this.timeout(10000);
-    node.services.dashd.once('tip', function(height) {
+    node.services.stashd.once('tip', function(height) {
       height.should.equal(1);
       done();
     });
