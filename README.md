@@ -1,7 +1,7 @@
 Stashcore Node
 ============
 
-A Stash full node for building applications and services with Node.js. A node is extensible and can be configured to run additional services. At the minimum a node has an interface to [Stash Core (stashd) v0.12.1.x](https://github.com/stashpay/stash/tree/v0.12.1.x) for more advanced address queries. Additional services can be enabled to make a node more useful such as exposing new APIs, running a block explorer and wallet service.
+A Stash full node for building applications and services with Node.js. A node is extensible and can be configured to run additional services. At the minimum a node has an interface to [Stash Core (stashd) v0.13.0](https://github.com/stashpayio/stash/tree/v0.13.0.x) for more advanced address queries. Additional services can be enabled to make a node more useful such as exposing new APIs, running a block explorer and wallet service.
 
 ## Usages
 
@@ -10,6 +10,7 @@ A Stash full node for building applications and services with Node.js. A node is
 ```bash
 git clone https://github.com/stashpayio/stashcore-node
 cd stashcore-node
+npm install
 ./bin/stashcore-node start
 ```
 
@@ -49,8 +50,8 @@ node.on('ready', function() {
 
 ## Prerequisites
 
-- Stash Core (stashd) (v0.12.1.x) with support for additional indexing *(see above)*
-- Node.js v0.10, v0.12, v4 or v5
+- Stash Core (stashd) (v0.13.0) with support for additional indexing *(see above)*
+- Node.js v8+
 - ZeroMQ *(libzmq3-dev for Ubuntu/Debian or zeromq on OSX)*
 - ~20GB of disk storage
 - ~1GB of RAM
@@ -69,7 +70,7 @@ stashcore-node start
 
 This will create a directory with configuration files for your node and install the necessary dependencies.
 
-Please note that [Stash Core](https://github.com/stashpay/stash/tree/master) needs to be installed first.
+Please note that [Stash Core](https://github.com/stashpayio/stash/tree/master) needs to be installed first.
 
 For more information about (and developing) services, please see the [Service Documentation](docs/services.md).
 
@@ -125,6 +126,6 @@ Please send pull requests for bug fixes, code optimization, and ideas for improv
 
 Code released under [the MIT license](https://github.com/stashpayio/stashcore-node/blob/master/LICENSE).
 
-Copyright 2013-2015 BitPay, Inc.
+Copyright 2016-2018 Stash Core Group, Inc.
 
 - bitcoin: Copyright (c) 2009-2015 Bitcoin Core Developers (MIT License)

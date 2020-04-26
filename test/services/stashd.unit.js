@@ -106,7 +106,7 @@ describe('Stash Service', function() {
       var stashd = new StashService(baseConfig);
       var methods = stashd.getAPIMethods();
       should.exist(methods);
-      methods.length.should.equal(23);
+      methods.length.should.equal(24);
     });
   });
 
@@ -1486,7 +1486,7 @@ describe('Stash Service', function() {
         return socket;
       };
       var StashService = proxyquire('../../lib/services/stashd', {
-        zmq: {
+        zeromq: {
           socket: socketFunc
         }
       });
@@ -3416,36 +3416,36 @@ describe('Stash Service', function() {
     });
   });
 
-  describe('#_paginateTxids', function() {
+  describe('#_paginate', function() {
     it('slice txids based on "from" and "to" (3 to 13)', function() {
       var stashd = new StashService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      var paginated = stashd._paginateTxids(txids, 3, 13);
+      var paginated = stashd._paginate(txids, 3, 13);
       paginated.should.deep.equal([3, 4, 5, 6, 7, 8, 9, 10]);
     });
     it('slice txids based on "from" and "to" (0 to 3)', function() {
       var stashd = new StashService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      var paginated = stashd._paginateTxids(txids, 0, 3);
+      var paginated = stashd._paginate(txids, 0, 3);
       paginated.should.deep.equal([0, 1, 2]);
     });
     it('slice txids based on "from" and "to" (0 to 1)', function() {
       var stashd = new StashService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      var paginated = stashd._paginateTxids(txids, 0, 1);
+      var paginated = stashd._paginate(txids, 0, 1);
       paginated.should.deep.equal([0]);
     });
     it('will throw error if "from" is greater than "to"', function() {
       var stashd = new StashService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
       (function() {
-        stashd._paginateTxids(txids, 1, 0);
+        stashd._paginate(txids, 1, 0);
       }).should.throw('"from" (1) is expected to be less than "to"');
     });
     it('will handle string numbers', function() {
       var stashd = new StashService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      var paginated = stashd._paginateTxids(txids, '1', '3');
+      var paginated = stashd._paginate(txids, '1', '3');
       paginated.should.deep.equal([1, 2]);
     });
   });
@@ -3610,7 +3610,7 @@ describe('Stash Service', function() {
           })
         }
       });
-      sinon.spy(stashd, '_paginateTxids');
+      sinon.spy(stashd, '_paginate');
       stashd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
       stashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
         received: 30 * 1e8,
@@ -3619,9 +3619,9 @@ describe('Stash Service', function() {
       var address = '7oK6xjGeVK5YCT5dpqzNXGUag1bQadPAyT';
       var options = {};
       stashd.getAddressSummary(address, options, function(err, summary) {
-        stashd._paginateTxids.callCount.should.equal(1);
-        stashd._paginateTxids.args[0][1].should.equal(0);
-        stashd._paginateTxids.args[0][2].should.equal(1000);
+        stashd._paginate.callCount.should.equal(1);
+        stashd._paginate.args[0][1].should.equal(0);
+        stashd._paginate.args[0][2].should.equal(1000);
         summary.appearances.should.equal(3);
         summary.totalReceived.should.equal(3000000000);
         summary.totalSpent.should.equal(1000000000);
@@ -3728,7 +3728,7 @@ describe('Stash Service', function() {
           getAddressMempool: getAddressMempool
         }
       });
-      sinon.spy(stashd, '_paginateTxids');
+      sinon.spy(stashd, '_paginate');
       stashd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
       stashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
         received: 30 * 1e8,
@@ -3743,7 +3743,7 @@ describe('Stash Service', function() {
         done();
       });
     });
-    it('will give error from _paginateTxids', function(done) {
+    it('will give error from _paginate', function(done) {
       var stashd = new StashService(baseConfig);
       var getAddressMempool = sinon.stub();
       stashd.nodes.push({
@@ -3751,13 +3751,13 @@ describe('Stash Service', function() {
           getAddressMempool: getAddressMempool
         }
       });
-      sinon.spy(stashd, '_paginateTxids');
+      sinon.spy(stashd, '_paginate');
       stashd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
       stashd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
         received: 30 * 1e8,
         balance: 20 * 1e8
       });
-      stashd._paginateTxids = sinon.stub().throws(new Error('test'));
+      stashd._paginate = sinon.stub().throws(new Error('test'));
       var address = '7oK6xjGeVK5YCT5dpqzNXGUag1bQadPAyT';
       var options = {
         queryMempool: false
@@ -4761,7 +4761,7 @@ describe('Stash Service', function() {
   });
 
   describe('#getDetailedTransaction', function() {
-    var txBuffer = new Buffer('01000000016f95980911e01c2c664b3e78299527a47933aac61a515930a8fe0213d1ac9abe01000000da0047304402200e71cda1f71e087c018759ba3427eb968a9ea0b1decd24147f91544629b17b4f0220555ee111ed0fc0f751ffebf097bdf40da0154466eb044e72b6b3dcd5f06807fa01483045022100c86d6c8b417bff6cc3bbf4854c16bba0aaca957e8f73e19f37216e2b06bb7bf802205a37be2f57a83a1b5a8cc511dc61466c11e9ba053c363302e7b99674be6a49fc0147522102632178d046673c9729d828cfee388e121f497707f810c131e0d3fc0fe0bd66d62103a0951ec7d3a9da9de171617026442fcd30f34d66100fab539853b43f508787d452aeffffffff0240420f000000000017a9148a31d53a448c18996e81ce67811e5fb7da21e4468738c9d6f90000000017a9148ce5408cfeaddb7ccb2545ded41ef478109454848700000000', 'hex');
+    var txBuffer = new Buffer('01000000016f95980911e01c2c664b3e78299527a47933aac61a515930a8fe0213d1ac9abe01000000da0047304402200e71cda1f71e087c018759ba3427eb968a9ea0b1decd24147f91544629b17b4f0220555ee111ed0fc0f751ffebf097bdf40da0154466eb044e72b6b3dcd5f06807fa01483045022100c86d6c8b417bff6cc3bbf4854c16bba0aaca957e8f73e19f37216e2b06bb7bf802205a37be2f57a83a1b5a8cc511dc61466c11e9ba053c363302e7b99674be6a49fc0147522102632178d046673c9729d828cfee388e121f497707f810c131e0d3fc0fe0bd66d62103a0951ec7d3a9da9de171617026442fcd30f34d66100fab539853b43f508787d452aeffffffff0240420f000000000017a9148a31d53a448c18996e81ce67811e5fb7da21e4468738c9d6f90000000017a9148ce5408cfeaddb7ccb2545ded41ef47810945484870000000000', 'hex');
     var info = {
       blockHash: '00000000000ec715852ea2ecae4dc8563f62d603c820f81ac284cd5be0a944d6',
       height: 530482,
@@ -4774,6 +4774,7 @@ describe('Stash Service', function() {
       height: info.height,
       version: 1,
       locktime: 411451,
+      vjoinsplit: [],
       time: info.timestamp,
       vin: [
         {
@@ -5152,7 +5153,7 @@ describe('Stash Service', function() {
                     "payment_amount": 3,
                     "start_epoch": 1484661709,
                     "type": 1,
-                    "url": "https://www.stash.org"
+                    "url": "https://www.dash.org"
                 },
                 "AbsoluteYesCount": 0,
                 "YesCount": 0,
@@ -5168,7 +5169,7 @@ describe('Stash Service', function() {
                     "payment_amount": 98,
                     "start_epoch": 1484654915,
                     "type": 1,
-                    "url": "https://www.stash.org"
+                    "url": "https://www.dash.org"
                 },
                 "AbsoluteYesCount": 0,
                 "YesCount": 0,
@@ -5184,7 +5185,7 @@ describe('Stash Service', function() {
                     "payment_amount": 84,
                     "start_epoch": 1483765282,
                     "type": 1,
-                    "url": "https://www.stash.org"
+                    "url": "https://www.dash.org"
                 },
                 "AbsoluteYesCount": 0,
                 "YesCount": 0,
@@ -5228,7 +5229,7 @@ describe('Stash Service', function() {
       var gobject = sinon.stub().callsArgWith(2, null, {
         result: {
           "DataHex": "5b5b2270726f706f73616c222c7b22656e645f65706f6368223a313438333835353139332c226e616d65223a2237656139616366663561653833643863396532313764333061326234643130656638663137316638222c227061796d656e745f61646472657373223a22795a3744596b44484348664831647737724b6459614b6356796b5a6d756e62714e4c222c227061796d656e745f616d6f756e74223a38342c2273746172745f65706f6368223a313438333736353238322c2274797065223a312c2275726c223a2268747470733a2f2f7777772e646173682e6f7267227d5d5d",
-          "DataString": "[[\"proposal\",{\"end_epoch\":1483855193,\"name\":\"7ea9acff5ae83d8c9e217d30a2b4d10ef8f171f8\",\"payment_address\":\"yZ7DYkDHCHfH1dw7rKdYaKcVykZmunbqNL\",\"payment_amount\":84,\"start_epoch\":1483765282,\"type\":1,\"url\":\"https://www.stash.org\"}]]",
+          "DataString": "[[\"proposal\",{\"end_epoch\":1483855193,\"name\":\"7ea9acff5ae83d8c9e217d30a2b4d10ef8f171f8\",\"payment_address\":\"yZ7DYkDHCHfH1dw7rKdYaKcVykZmunbqNL\",\"payment_amount\":84,\"start_epoch\":1483765282,\"type\":1,\"url\":\"https://www.dash.org\"}]]",
           "Hash": "4ef24027c631c43035aa4cf5c672e1298311decd9cffbd16731f454c9c0d6d00",
           "CollateralHash": "6be3a3ae49498ec8f4e5cba56ac44164aeb78e57f2dbc716f4ff863034830d08",
           "CreationTime": 1483724928,
