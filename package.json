@@ -46,6 +46,8 @@
     "stashd"
   ],
   "dependencies": {
+    "@stashcore/insight-api": "^2.3.3",
+    "@stashcore/insight-ui": "^2.0.12",
     "@stashcore/stashcore-lib": "^0.18.0",
     "@stashcore/stashd-rpc": "^2.0.1",
     "async": "^2.6.2",
